@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { http } from '../api'
 import { wsService } from '../services/websocket'
 
@@ -31,6 +31,10 @@ export const useChatStore = defineStore('chat', () => {
   const loading = ref(false)
   const sending = ref(false)
 
+  const totalUnread = computed(() =>
+    conversations.value.reduce((sum, c) => sum + (c.unread_count || 0), 0),
+  )
+
   let wsInited = false
 
   function extractData<T>(res: { data: any }): T {
@@ -57,6 +61,11 @@ export const useChatStore = defineStore('chat', () => {
         }
         http.post('/chat/mark-read', { conversation_id: msg.conversation_id }).catch(() => {})
         wsService.sendRead(msg.conversation_id)
+      } else {
+        const conv = conversations.value.find((c) => c.id === msg.conversation_id)
+        if (conv) {
+          conv.unread_count = (conv.unread_count || 0) + 1
+        }
       }
       loadConversations().catch(() => {})
     })
@@ -161,6 +170,7 @@ export const useChatStore = defineStore('chat', () => {
     currentConversationId,
     loading,
     sending,
+    totalUnread,
     initWsListeners,
     resetWsListeners,
     loadConversations,

@@ -108,6 +108,8 @@ function goToProfile() {
             :title="conv.customer_service_name"
             :label="conv.last_message || '暂无消息'"
             is-link
+            class="conv-cell"
+            :class="{ 'has-unread': conv.unread_count > 0 }"
             @click="router.push(`/chat/${conv.id}`)"
           >
             <template #icon>
@@ -129,7 +131,7 @@ function goToProfile() {
                 <span class="conv-time">
                   {{ new Date(conv.last_message_time).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) }}
                 </span>
-                <van-badge v-if="conv.unread_count > 0" :content="conv.unread_count" :max="99" />
+                <van-badge v-if="conv.unread_count > 0" :content="conv.unread_count" :max="99" class="unread-badge" />
               </div>
             </template>
           </van-cell>
@@ -180,7 +182,7 @@ function goToProfile() {
     <!-- Bottom TabBar -->
     <van-tabbar v-model="activeTab" route-placeholder>
       <van-tabbar-item icon="apps-o">游戏</van-tabbar-item>
-      <van-tabbar-item icon="chat-o" :badge="totalUnread > 0 ? totalUnread : ''">
+      <van-tabbar-item icon="chat-o" :badge="totalUnread > 0 ? totalUnread : undefined">
         消息
       </van-tabbar-item>
       <van-tabbar-item icon="user-o">我的</van-tabbar-item>
@@ -289,6 +291,24 @@ function goToProfile() {
 .conv-time {
   font-size: 11px;
   color: #969799;
+}
+
+.conv-cell.has-unread :deep(.van-cell__title span) {
+  font-weight: 600;
+  color: #323233;
+}
+
+.conv-cell.has-unread {
+  background: #f0f5ff;
+}
+
+.conv-cell.has-unread :deep(.van-cell__label) {
+  color: #666;
+  font-weight: 500;
+}
+
+.unread-badge :deep(.van-badge) {
+  font-size: 12px;
 }
 
 .profile-card {

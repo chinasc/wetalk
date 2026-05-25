@@ -38,7 +38,7 @@ export default http
 
 // Auth
 export function loginApi(data: { username: string; password: string }) {
-  return http.post<{ token: string; user: any }>('/auth/login', data)
+  return http.post<{ token: string; user: any }>('/auth/admin-login', data)
 }
 
 export function getAdminInfo() {
@@ -155,4 +155,21 @@ export function updateGame(id: number, formData: FormData) {
 
 export function deleteGame(id: number) {
   return http.delete(`/admin/games/${id}`)
+}
+
+// Quick Replies
+export function getQuickReplyList() {
+  return http.get<any>('/admin/quick-replies')
+}
+
+export function createQuickReply(data: { title: string; content: string; sort_order: number }) {
+  return http.post<any>('/admin/quick-replies', data)
+}
+
+export function updateQuickReply(id: number, data: { title?: string; content?: string; sort_order?: number }) {
+  return http.post(`/admin/quick-replies/${id}`, data)
+}
+
+export function deleteQuickReply(id: number) {
+  return http.delete(`/admin/quick-replies/${id}`)
 }

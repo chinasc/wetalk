@@ -140,3 +140,12 @@ export interface PaginatedResult<T> {
   page: number
   page_size: number
 }
+
+export interface QuickReply {
+  id: number
+  title: string
+  content: string
+  sort_order: number
+  created_at: string
+  updated_at: string
+}

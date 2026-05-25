@@ -22,8 +22,9 @@ class ChatController
     public function conversations(Request $request)
     {
         $user = $request->user;
+        $isCs = ($user->role === 'customer_service' || $user->role === 'admin');
 
-        if ($user->role === 'customer_service' || $user->role === 'admin') {
+        if ($isCs) {
             $query = Conversation::where('customer_service_id', $user->id)
                 ->with(['user', 'latestMessage'])
                 ->orderBy('updated_at', 'desc');
@@ -36,9 +37,8 @@ class ChatController
         $paginator = $query->paginate(20);
 
         $items = $paginator->items();
-        $mapped = array_map(function ($conv) {
+        $mapped = array_map(function ($conv) use ($user, $isCs) {
             $lastMsg = $conv->latestMessage;
-            $isCs = ($conv->customer_service_id ?? null) === ($conv->customerService->id ?? null);
 
             if (isset($conv->customerService) && $conv->customerService) {
                 $peerNickname = $conv->customerService->nickname ?: $conv->customerService->username;
@@ -51,6 +51,12 @@ class ChatController
                 $peerAvatar = '';
             }
 
+            $lastReadId = $isCs ? $conv->cs_last_read_id : $conv->user_last_read_id;
+            $unreadCount = Message::where('conversation_id', $conv->id)
+                ->where('id', '>', $lastReadId)
+                ->where('sender_id', '!=', $user->id)
+                ->count();
+
             return [
                 'id' => $conv->id,
                 'user_id' => $conv->user_id,
@@ -62,7 +68,7 @@ class ChatController
                 'last_message' => $lastMsg ? $lastMsg->content : '',
                 'last_message_type' => $lastMsg ? $lastMsg->type : '',
                 'last_message_time' => $lastMsg ? $lastMsg->created_at : $conv->created_at,
-                'unread_count' => 0,
+                'unread_count' => $unreadCount,
                 'status' => $conv->status,
                 'created_at' => $conv->created_at,
                 'updated_at' => $conv->updated_at,
@@ -165,34 +171,37 @@ class ChatController
             $content = '/upload/chat/' . $filename;
         }
 
+        $now = date('Y-m-d H:i:s');
         $message = Message::create([
             'conversation_id' => $conversationId,
             'sender_id' => $user->id,
             'sender_type' => $isUser ? 'user' : 'customer_service',
             'type' => $type,
             'content' => $content,
+            'created_at' => $now,
         ]);
 
         $conversation->touch();
 
         $targetId = $isUser ? $conversation->customer_service_id : $conversation->user_id;
-        echo "接收人ID" . $targetId . "\r\n";
+        $msgData = [
+            'id' => $message->id,
+            'conversation_id' => $conversationId,
+            'sender_id' => $user->id,
+            'sender_type' => $message->sender_type,
+            'sender_nickname' => $user->nickname,
+            'sender_avatar' => $user->avatar,
+            'type' => $type,
+            'content' => $content,
+            'created_at' => $now,
+        ];
+
         WsService::sendToUser($targetId, [
             'event' => 'message.new',
-            'data' => [
-                'id' => $message->id,
-                'conversation_id' => $conversationId,
-                'sender_id' => $user->id,
-                'sender_type' => $message->sender_type,
-                'sender_nickname' => $user->nickname,
-                'sender_avatar' => $user->avatar,
-                'type' => $type,
-                'content' => $content,
-                'created_at' => $message->created_at,
-            ],
+            'data' => $msgData,
         ]);
 
-        return json(['code' => 0, 'data' => $message]);
+        return json(['code' => 0, 'data' => $msgData]);
     }
 
     public function markRead(Request $request)
@@ -203,6 +212,13 @@ class ChatController
         $conversation = Conversation::find($conversationId);
         if (!$conversation) {
             return json(['code' => 1, 'msg' => '会话不存在']);
+        }
+
+        $maxId = Message::where('conversation_id', $conversationId)->max('id') ?: 0;
+        if ($user->id === $conversation->user_id) {
+            $conversation->update(['user_last_read_id' => $maxId]);
+        } elseif ($user->id === $conversation->customer_service_id) {
+            $conversation->update(['cs_last_read_id' => $maxId]);
         }
 
         $targetId = ($user->id === $conversation->user_id)

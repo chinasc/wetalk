@@ -29,6 +29,10 @@
           <el-icon><Trophy /></el-icon>
           <span>游戏管理</span>
         </el-menu-item>
+        <el-menu-item index="/quick-replies">
+          <el-icon><ChatLineSquare /></el-icon>
+          <span>常用语管理</span>
+        </el-menu-item>
         <el-menu-item index="/settings">
           <el-icon><Setting /></el-icon>
           <span>系统设置</span>

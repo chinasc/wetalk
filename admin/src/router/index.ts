@@ -48,6 +48,12 @@ const router = createRouter({
           meta: { title: '游戏管理' },
         },
         {
+          path: 'quick-replies',
+          name: 'QuickReplyManage',
+          component: () => import('@/views/QuickReplyManage.vue'),
+          meta: { title: '常用语管理' },
+        },
+        {
           path: 'settings',
           name: 'Settings',
           component: () => import('@/views/Settings.vue'),

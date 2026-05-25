@@ -7,6 +7,7 @@ import type {
   ChatMessage,
   Album,
   AlbumDetail,
+  QuickReply,
 } from '../types'
 
 const http = axios.create({
@@ -132,6 +133,13 @@ export async function getAlbums(): Promise<Album[]> {
 
 export async function getAlbumDetail(id: number): Promise<AlbumDetail> {
   const res = await http.get(`/albums/${id}`)
+  return unwrap(res)
+}
+
+// ============ Quick Replies ============
+
+export async function getQuickReplies(): Promise<QuickReply[]> {
+  const res = await http.get('/quick-replies')
   return unwrap(res)
 }
 

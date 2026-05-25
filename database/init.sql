@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS `conversations` (
   `user_id` int unsigned NOT NULL COMMENT '用户 ID',
   `customer_service_id` int unsigned NOT NULL COMMENT '客服 ID',
   `status` enum('active','closed') NOT NULL DEFAULT 'active' COMMENT '会话状态',
+  `user_last_read_id` bigint unsigned NOT NULL DEFAULT 0 COMMENT '用户最后已读消息ID',
+  `cs_last_read_id` bigint unsigned NOT NULL DEFAULT 0 COMMENT '客服最后已读消息ID',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -96,6 +98,17 @@ CREATE TABLE IF NOT EXISTS `settings` (
 -- 管理员账号密码: admin / admin123
 INSERT INTO `users` (`username`, `password`, `nickname`, `role`, `status`, `password_set`, `created_at`, `updated_at`)
 VALUES ('admin', '$2y$10$NkXjvCsJ4zTAMdfIPvT9hOZjhgAgfm7tqgCdhTA0vO5sDPmaZf/sK', '管理员', 'admin', 1, 1, NOW(), NOW());
+
+-- 常用语表
+CREATE TABLE IF NOT EXISTS `quick_replies` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(50) NOT NULL DEFAULT '' COMMENT '常用语标题',
+  `content` text NOT NULL COMMENT '常用语内容',
+  `sort_order` int NOT NULL DEFAULT 0 COMMENT '排序权重',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='常用语表';
 
 -- 预置系统配置
 INSERT INTO `settings` (`key`, `value`) VALUES

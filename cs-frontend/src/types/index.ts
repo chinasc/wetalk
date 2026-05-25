@@ -92,3 +92,12 @@ export interface ApiResponse<T = unknown> {
   message: string
   data: T
 }
+
+// ============ Quick Reply ============
+
+export interface QuickReply {
+  id: number
+  title: string
+  content: string
+  sort_order: number
+}

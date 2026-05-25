@@ -22,12 +22,8 @@ class ChatHandler
         });
 
         // Subscribe to Channel: HTTP process publishes, WS worker delivers instantly
-        Client::$onConnect = function () {
-            echo "Channel Client 连接成功\r\n";
-        };
         Client::connect('127.0.0.1', 2206);
         Client::on('ws_send', function ($payload) {
-            echo "Channel 收到消息: " . $payload . "\r\n";
             WsService::onChannelMessage($payload);
         });
     }
@@ -38,7 +34,6 @@ class ChatHandler
 
     public function onMessage(TcpConnection $connection, $data)
     {
-        echo $data . "\r\n";
         $msg = json_decode($data, true);
         if (!$msg || !isset($msg['event'])) {
             return;
@@ -80,16 +75,11 @@ class ChatHandler
             $decoded = JwtService::decode($token);
             $user = User::find($decoded->uid);
             if (!$user || $user->status !== 1) {
-                echo "用户登陆失败\r\n";
                 $connection->send(json_encode(['event' => 'auth.fail', 'data' => ['msg' => '认证失败']]));
                 return;
             }
-            echo "绑定用户\r\n";
             $connection->userId = $user->id;
             WsService::bind($user->id, $connection);
-            $r = json_encode(WsService::$connections);
-            echo "查看是否绑定成功：" . $r .  " \r\n";
-            echo "绑定结束";
             if ($user->role === 'customer_service') {
                 $this->broadcastCsStatus($user->id, true);
             }
@@ -129,19 +119,20 @@ class ChatHandler
             return;
         }
 
+        $now = date('Y-m-d H:i:s');
         $message = \app\model\Message::create([
             'conversation_id' => $conversationId,
             'sender_id' => $userId,
             'sender_type' => $isUser ? 'user' : 'customer_service',
             'type' => $type,
             'content' => $content,
+            'created_at' => $now,
         ]);
 
         $conversation->touch();
 
         $user = User::find($userId);
         $targetId = $isUser ? $conversation->customer_service_id : $conversation->user_id;
-        echo "正式发送消息：接收人：" . $targetId . "\r\n";
         WsService::sendToUser($targetId, [
             'event' => 'message.new',
             'data' => [
@@ -153,7 +144,7 @@ class ChatHandler
                 'sender_avatar' => $user->avatar,
                 'type' => $type,
                 'content' => $content,
-                'created_at' => $message->created_at->format('Y-m-d H:i:s'),
+                'created_at' => $now,
             ],
         ]);
     }

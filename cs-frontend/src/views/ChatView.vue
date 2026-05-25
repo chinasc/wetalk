@@ -88,6 +88,14 @@
     <div class="chat-toolbar">
       <van-button
         size="small"
+        icon="chat-o"
+        class="toolbar-btn"
+        @click="showQuickReplySheet = true"
+      >
+        常用语
+      </van-button>
+      <van-button
+        size="small"
         icon="photo-o"
         class="toolbar-btn"
         @click="showAlbumSheet = true"
@@ -154,6 +162,27 @@
       </div>
     </van-action-sheet>
 
+    <!-- Quick Reply ActionSheet -->
+    <van-action-sheet
+      v-model:show="showQuickReplySheet"
+      title="常用语"
+      class="album-sheet"
+    >
+      <div class="album-list">
+        <van-loading v-if="quickRepliesLoading" class="album-loading" />
+        <van-empty v-else-if="quickReplies.length === 0" description="暂无常用语" />
+        <div
+          v-for="item in quickReplies"
+          :key="item.id"
+          class="quick-reply-item"
+          @click="onSelectQuickReply(item)"
+        >
+          <div class="quick-reply-title">{{ item.title }}</div>
+          <div class="quick-reply-content">{{ item.content }}</div>
+        </div>
+      </div>
+    </van-action-sheet>
+
     <!-- Hidden file input for image upload -->
     <input
       ref="fileInputRef"
@@ -175,7 +204,8 @@ import { showToast, showLoadingToast, closeToast } from 'vant'
 import type { ChatMessage, ConvItem } from '../stores/chat'
 import { useChatStore } from '../stores/chat'
 import { useAuthStore } from '../stores/auth'
-import { http, getAlbums } from '../api'
+import { http, getAlbums, getQuickReplies } from '../api'
+import type { QuickReply } from '../types'
 
 const route = useRoute()
 const router = useRouter()
@@ -195,6 +225,11 @@ const previewImages = ref<string[]>([])
 const showAlbumSheet = ref(false)
 const albums = ref<any[]>([])
 const albumsLoading = ref(false)
+
+// Quick reply sheet
+const showQuickReplySheet = ref(false)
+const quickReplies = ref<QuickReply[]>([])
+const quickRepliesLoading = ref(false)
 
 // Conversation info for title/avatar
 const conversationInfo = ref<ConvItem | null>(null)
@@ -331,6 +366,29 @@ async function onSelectAlbum(album: any): Promise<void> {
   }
 }
 
+// ============ Quick Reply ============
+
+async function loadQuickReplies(): Promise<void> {
+  quickRepliesLoading.value = true
+  try {
+    quickReplies.value = await getQuickReplies()
+  } catch {
+    showToast('获取常用语失败')
+  } finally {
+    quickRepliesLoading.value = false
+  }
+}
+
+async function onSelectQuickReply(item: QuickReply): Promise<void> {
+  showQuickReplySheet.value = false
+  try {
+    await chatStore.sendTextMessage(conversationId.value, item.content)
+    scrollToBottom(true)
+  } catch {
+    showToast('发送失败')
+  }
+}
+
 function onBubbleClick(msg: any): void {
   if (msg.type === 'image') {
     previewImage(msg.content)
@@ -383,6 +441,12 @@ async function loadMore(): Promise<void> {
 watch(showAlbumSheet, (visible) => {
   if (visible && albums.value.length === 0) {
     loadAlbums()
+  }
+})
+
+watch(showQuickReplySheet, (visible) => {
+  if (visible && quickReplies.value.length === 0) {
+    loadQuickReplies()
   }
 })
 
@@ -666,5 +730,35 @@ onUnmounted(() => {
   font-size: 12px;
   color: #999;
   margin-top: 4px;
+}
+
+/* Quick reply items */
+.quick-reply-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+}
+
+.quick-reply-item:active {
+  background: #f9f9f9;
+}
+
+.quick-reply-item:last-child {
+  border-bottom: none;
+}
+
+.quick-reply-title {
+  font-size: 15px;
+  color: #333;
+  font-weight: 500;
+}
+
+.quick-reply-content {
+  font-size: 13px;
+  color: #999;
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

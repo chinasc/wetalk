@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 class Conversation extends Model
 {
     protected $table = 'conversations';
-    protected $fillable = ['user_id', 'customer_service_id', 'status'];
+    protected $fillable = ['user_id', 'customer_service_id', 'status', 'user_last_read_id', 'cs_last_read_id'];
 
     public function user()
     {

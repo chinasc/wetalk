@@ -77,6 +77,49 @@ class AuthController
     }
 
     /**
+     * 管理后台登录：账号 + 密码，且必须是管理员角色
+     */
+    public function adminLogin(Request $request)
+    {
+        $username = trim($request->post('username', ''));
+        $password = $request->post('password', '');
+
+        if (!$username || !$password) {
+            return json(['code' => 1, 'msg' => '请输入用户名和密码']);
+        }
+
+        $user = User::where('username', $username)->where('status', 1)->first();
+        if (!$user) {
+            return json(['code' => 1, 'msg' => '账号不存在或已被禁用']);
+        }
+
+        if ($user->role !== 'admin') {
+            return json(['code' => 1, 'msg' => '该账号不是管理员账号']);
+        }
+
+        if (!$user->password || !password_verify($password, $user->password)) {
+            return json(['code' => 1, 'msg' => '密码错误']);
+        }
+
+        $token = JwtService::generate($user->id);
+
+        return json([
+            'code' => 0,
+            'msg' => '登录成功',
+            'data' => [
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'username' => $user->username,
+                    'nickname' => $user->nickname,
+                    'avatar' => $user->avatar,
+                    'role' => $user->role,
+                ],
+            ],
+        ]);
+    }
+
+    /**
      * 客服端登录：账号 + 密码，且必须是客服角色
      */
     public function csLogin(Request $request)

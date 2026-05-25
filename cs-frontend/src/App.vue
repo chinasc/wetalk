@@ -3,7 +3,18 @@
 </template>
 
 <script setup lang="ts">
-// Pure router-view shell. Each view manages its own layout.
+import { onMounted } from 'vue'
+import { useAuthStore } from './stores/auth'
+import { useChatStore } from './stores/chat'
+
+const authStore = useAuthStore()
+const chatStore = useChatStore()
+
+onMounted(() => {
+  if (authStore.token) {
+    chatStore.initWsListeners()
+  }
+})
 </script>
 
 <style>

@@ -4,6 +4,7 @@ use Webman\Route;
 // 公开路由
 Route::post('/api/auth/login', [app\controller\AuthController::class, 'login']);
 Route::post('/api/auth/check-first-login', [app\controller\AuthController::class, 'checkFirstLogin']);
+Route::post('/api/auth/admin-login', [app\controller\AuthController::class, 'adminLogin']);
 Route::post('/api/auth/cs-login', [app\controller\AuthController::class, 'csLogin']);
 Route::post('/api/chat/verify-code', [app\controller\ChatController::class, 'verifyAccessCode']);
 Route::get('/api/games', [app\controller\GameController::class, 'index']);
@@ -30,6 +31,9 @@ Route::group('/api', function () {
     // 相册（客服端查看用）
     Route::get('/albums', [app\controller\AlbumController::class, 'index']);
     Route::get('/albums/{id}', [app\controller\AlbumController::class, 'show']);
+
+    // 常用语（客服端查看用）
+    Route::get('/quick-replies', [app\controller\QuickReplyController::class, 'index']);
 
     // 管理后台路由
     Route::group('/admin', function () {
@@ -59,6 +63,12 @@ Route::group('/api', function () {
 
         // 聊天记录
         Route::get('/chat/conversations', [app\controller\ChatController::class, 'adminConversations']);
+
+        // 常用语管理
+        Route::get('/quick-replies', [app\controller\QuickReplyController::class, 'index']);
+        Route::post('/quick-replies', [app\controller\QuickReplyController::class, 'store']);
+        Route::post('/quick-replies/{id}', [app\controller\QuickReplyController::class, 'update']);
+        Route::delete('/quick-replies/{id}', [app\controller\QuickReplyController::class, 'destroy']);
 
         // 系统设置
         Route::get('/settings', [app\controller\SettingsController::class, 'index']);

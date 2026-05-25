@@ -1,6 +1,10 @@
 <template>
   <div class="conversations-page">
-    <van-nav-bar title="客服工作台" fixed placeholder>
+    <van-nav-bar fixed placeholder>
+      <template #title>
+        <span>客服工作台</span>
+        <van-badge v-if="chatStore.totalUnread > 0" :content="chatStore.totalUnread" :max="99" class="title-badge" />
+      </template>
       <template #left>
         <van-icon name="manager-o" size="20" @click="goProfile" />
       </template>
@@ -23,12 +27,13 @@
           v-for="conv in conversations"
           :key="conv.id"
           class="conversation-cell"
+          :class="{ 'has-unread': conv.unread_count > 0 }"
           clickable
           @click="openChat(conv)"
         >
           <template #title>
             <div class="conv-content">
-              <van-badge :content="conv.unread_count || ''" :max="99">
+              <van-badge :content="conv.unread_count > 0 ? conv.unread_count : undefined" :max="99">
                 <van-image
                   round
                   width="48"
@@ -43,7 +48,7 @@
                   <span class="conv-nickname">{{ conv.user_nickname }}</span>
                   <span class="conv-time">{{ formatTime(conv.last_message_time) }}</span>
                 </div>
-                <div class="conv-last-msg">
+                <div class="conv-last-msg" :class="{ 'unread-msg': conv.unread_count > 0 }">
                   {{ formatLastMessage(conv.last_message_type, conv.last_message) }}
                 </div>
               </div>
@@ -230,5 +235,23 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.conv-last-msg.unread-msg {
+  color: #333;
+  font-weight: 500;
+}
+
+.conversation-cell.has-unread {
+  background: #f0f5ff;
+}
+
+.conversation-cell.has-unread:active {
+  background: #e6efff;
+}
+
+.title-badge {
+  margin-left: 6px;
+  vertical-align: middle;
 }
 </style>
