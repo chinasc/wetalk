@@ -2,7 +2,8 @@ type EventHandler = (data: Record<string, unknown>) => void
 
 class WebSocketService {
   private ws: WebSocket | null = null
-  private url = 'ws://localhost:8788'
+  // private url = 'ws://localhost:8788'
+  private url = `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`
   private token = ''
   private handlers: Map<string, Set<EventHandler>> = new Map()
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null

@@ -3,7 +3,8 @@ import type { WsNewMessageData, WsReadData } from '../types'
 type MessageHandler = (data: WsNewMessageData) => void
 type ReadHandler = (data: WsReadData) => void
 
-const WS_URL = 'ws://localhost:8788'
+// const WS_URL = 'ws://localhost:8788'
+const WS_URL = `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`
 
 class WebSocketService {
   private ws: WebSocket | null = null
