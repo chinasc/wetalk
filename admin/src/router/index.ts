@@ -3,7 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 import LayoutView from '@/views/LayoutView.vue'
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory('/admin/'),
   routes: [
     {
       path: '/login',
