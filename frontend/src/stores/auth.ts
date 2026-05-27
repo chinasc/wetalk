@@ -12,10 +12,17 @@ export const useAuthStore = defineStore('auth', () => {
   const nickname = computed(() => user.value?.nickname || user.value?.username || '')
   const avatar = computed(() => user.value?.avatar || '')
 
+  function generateUUID(): string {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0
+      return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
+    })
+  }
+
   function getDeviceToken(): string {
     let dt = localStorage.getItem('device_token')
     if (!dt) {
-      dt = crypto.randomUUID()
+      dt = generateUUID()
       localStorage.setItem('device_token', dt)
     }
     return dt
