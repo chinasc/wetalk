@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import type { UserInfo, LoginForm } from '../types'
 import { login as apiLogin, getUserInfo } from '../api'
 import { wsService } from '../services/websocket'
+import { useChatStore } from './chat'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string>(localStorage.getItem('cs_token') || '')
@@ -18,7 +19,7 @@ export const useAuthStore = defineStore('auth', () => {
         return
       }
       user.value = info
-      wsService.connect(token.value)
+      wsService.connect(token.value, onWsAuth)
     } catch {
       logout()
     }
@@ -35,7 +36,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = result.user
       localStorage.setItem('cs_token', result.token)
       localStorage.setItem('cs_user', JSON.stringify(result.user))
-      wsService.connect(result.token)
+      wsService.connect(result.token, onWsAuth)
     } finally {
       loading.value = false
     }
@@ -47,6 +48,14 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('cs_token')
     localStorage.removeItem('cs_user')
     wsService.disconnect()
+  }
+
+  function onWsAuth() {
+    const chatStore = useChatStore()
+    chatStore.loadConversations().catch(() => {})
+    if (chatStore.currentConversationId) {
+      chatStore.loadMessages(chatStore.currentConversationId).catch(() => {})
+    }
   }
 
   const isLoggedIn = () => !!token.value && !!user.value

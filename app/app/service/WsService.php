@@ -33,35 +33,30 @@ class WsService
         \support\Redis::del('user_fd:' . $userId);
     }
 
-    /**
-     * Send data to a user. Works across processes:
-     * - If the connection is in this process (WS worker), send directly
-     * - Otherwise (HTTP worker), publish via Channel, WS worker delivers instantly
-     */
     public static function sendToUser(int $userId, array $data): bool
     {
+        // Direct send if connection is in this process
         if (isset(self::$connections[$userId])) {
             self::$connections[$userId]->send(json_encode($data, JSON_UNESCAPED_UNICODE));
             return true;
         }
 
-        // Not in this process — publish via Channel, WS worker delivers instantly
-        Client::connect('127.0.0.1', 2206);
-        $payload = json_encode([
-            'user_id' => $userId,
-            'data' => $data,
-        ], JSON_UNESCAPED_UNICODE);
-        echo "Channel publish ws_send, userId={$userId}\r\n";
-        Client::publish('ws_send', $payload);
+        // Cross-process: publish via Channel, WS worker delivers
+        try {
+            Client::connect('127.0.0.1', 2206);
+            Client::publish('ws_send', json_encode([
+                'user_id' => $userId,
+                'data' => $data,
+            ], JSON_UNESCAPED_UNICODE));
+        } catch (\Throwable $e) {
+            // Channel unavailable — message still saved in DB, user can fetch on reconnect
+            return false;
+        }
         return false;
     }
 
-    /**
-     * Called when the WS worker receives a Channel message from HTTP process.
-     */
     public static function onChannelMessage(string $payload): void
     {
-        echo "接收到chanel监听的消息：" . $payload . "\r\n";
         $msg = json_decode($payload, true);
         if (!$msg || !isset($msg['user_id'], $msg['data'])) {
             return;

@@ -29,6 +29,11 @@ export const useChatStore = defineStore('chat', () => {
 
     wsService.on('auth.success', () => {
       connected.value = true
+      // Reconnect: refresh data to catch up on missed messages
+      fetchConversations().catch(() => {})
+      if (currentConversationId.value) {
+        fetchMessages(currentConversationId.value).catch(() => {})
+      }
     })
 
     wsService.on('message.new', (data) => {
