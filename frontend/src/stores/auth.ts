@@ -12,8 +12,17 @@ export const useAuthStore = defineStore('auth', () => {
   const nickname = computed(() => user.value?.nickname || user.value?.username || '')
   const avatar = computed(() => user.value?.avatar || '')
 
+  function getDeviceToken(): string {
+    let dt = localStorage.getItem('device_token')
+    if (!dt) {
+      dt = crypto.randomUUID()
+      localStorage.setItem('device_token', dt)
+    }
+    return dt
+  }
+
   async function login(username: string, verifyCode?: string) {
-    const res = await authApi.login({ username, verify_code: verifyCode })
+    const res = await authApi.login({ username, verify_code: verifyCode, device_token: getDeviceToken() })
     token.value = res.data.token
     user.value = res.data.user
     localStorage.setItem('token', res.data.token)
@@ -22,7 +31,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function checkFirstLogin(username: string) {
-    const res = await authApi.checkFirstLogin(username)
+    const res = await authApi.checkFirstLogin(username, getDeviceToken())
     return res.data.is_first_login
   }
 

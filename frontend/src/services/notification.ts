@@ -35,20 +35,21 @@ function createDingUrl(): string {
   return URL.createObjectURL(new Blob([buffer], { type: 'audio/wav' }))
 }
 
-const audio = new Audio(createDingUrl())
+const audioUrl = createDingUrl()
+const audio = new Audio(audioUrl)
 audio.volume = 1
+audio.preload = 'auto'
 let activated = false
 
 function ensureActivated() {
   if (activated) return
-  audio.play().then(() => {
-    audio.pause()
-    activated = true
-  }).catch(() => {})
+  activated = true
+  document.removeEventListener('click', ensureActivated)
+  document.removeEventListener('touchstart', ensureActivated)
 }
 
-document.addEventListener('click', ensureActivated, { once: true })
-document.addEventListener('touchstart', ensureActivated, { once: true })
+document.addEventListener('click', ensureActivated)
+document.addEventListener('touchstart', ensureActivated)
 
 export function isSoundEnabled(): boolean {
   return localStorage.getItem(SOUND_KEY) !== 'false'
@@ -61,8 +62,9 @@ export function setSoundEnabled(enabled: boolean): void {
 export function playNotification(): void {
   if (!isSoundEnabled()) return
   try {
-    audio.currentTime = 0
-    audio.play().catch(() => {})
+    const snd = new Audio(audioUrl)
+    snd.volume = 1
+    snd.play().catch(() => {})
   } catch {
     // silently fail
   }

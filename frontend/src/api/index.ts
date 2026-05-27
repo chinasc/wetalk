@@ -41,11 +41,11 @@ http.interceptors.response.use(
 export default http
 
 export const authApi = {
-  login(params: { username: string; verify_code?: string }) {
+  login(params: { username: string; verify_code?: string; device_token?: string }) {
     return http.post('/auth/login', params)
   },
-  checkFirstLogin(username: string) {
-    return http.post('/auth/check-first-login', { username })
+  checkFirstLogin(username: string, deviceToken?: string) {
+    return http.post('/auth/check-first-login', { username, device_token: deviceToken || '' })
   },
   getInfo() {
     return http.get('/auth/info')

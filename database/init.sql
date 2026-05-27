@@ -110,6 +110,17 @@ CREATE TABLE IF NOT EXISTS `quick_replies` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='常用语表';
 
+-- 用户授权设备表
+CREATE TABLE IF NOT EXISTS `user_devices` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned NOT NULL COMMENT '用户ID',
+  `device_token` varchar(64) NOT NULL COMMENT '设备标识',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_device` (`user_id`, `device_token`),
+  KEY `idx_device_token` (`device_token`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户授权设备表';
+
 -- 预置系统配置
 INSERT INTO `settings` (`key`, `value`) VALUES
 ('chat_access_code', '8888'),

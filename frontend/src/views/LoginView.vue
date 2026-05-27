@@ -55,7 +55,7 @@ async function handleLogin() {
     closeToast()
     if (err.code === 2) {
       needVerifyCode.value = true
-      showToast('首次登录，请输入验证码')
+      showToast('需要验证码，请输入验证码')
     } else {
       showToast(err.message || '登录失败')
     }
@@ -88,7 +88,7 @@ async function handleLogin() {
           v-if="needVerifyCode"
           v-model="verifyCode"
           label="验证码"
-          placeholder="首次登录，请输入验证码"
+          placeholder="请输入验证码"
           clearable
         />
       </van-cell-group>
@@ -109,7 +109,7 @@ async function handleLogin() {
       </div>
 
       <p class="login-tip">
-        {{ needVerifyCode ? '首次登录请输入管理员提供的验证码' : '输入用户名即可登录' }}
+        {{ needVerifyCode ? '请输入管理员提供的验证码' : '输入用户名即可登录' }}
       </p>
     </div>
   </div>
