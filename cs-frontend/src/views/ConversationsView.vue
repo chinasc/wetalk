@@ -48,7 +48,12 @@
                     <span class="conv-time">{{ formatTime(conv.last_message_time) }}</span>
                   </div>
                   <div class="conv-last-msg" :class="{ 'unread-msg': conv.unread_count > 0 }">
-                    {{ formatLastMessage(conv.last_message_type, conv.last_message) }}
+                    <template v-if="chatStore.getDraft(conv.id)">
+                      <span class="draft-tag">[草稿]</span>{{ chatStore.getDraft(conv.id) }}
+                    </template>
+                    <template v-else>
+                      {{ formatLastMessage(conv.last_message_type, conv.last_message) }}
+                    </template>
                   </div>
                 </div>
               </div>
@@ -281,5 +286,11 @@ onMounted(() => {
 
 .swipe-btn {
   height: 100%;
+}
+
+.draft-tag {
+  color: #ee0a24;
+  font-weight: 500;
+  margin-right: 2px;
 }
 </style>
