@@ -236,6 +236,25 @@ class ChatController
         return json(['code' => 0, 'msg' => '已标记已读']);
     }
 
+    public function clearMessages(Request $request, $conversationId)
+    {
+        $conversation = Conversation::find($conversationId);
+        if (!$conversation) {
+            return json(['code' => 1, 'msg' => '会话不存在']);
+        }
+
+        $user = $request->user;
+        $isMember = ($user->id === $conversation->user_id || $user->id === $conversation->customer_service_id);
+        if (!$isMember && $user->role !== 'admin') {
+            return json(['code' => 403, 'msg' => '无权限']);
+        }
+
+        Message::where('conversation_id', $conversationId)->delete();
+        $conversation->update(['user_last_read_id' => 0, 'cs_last_read_id' => 0]);
+
+        return json(['code' => 0, 'msg' => '聊天记录已清除']);
+    }
+
     public function adminConversations(Request $request)
     {
         $csId = $request->get('customer_service_id');

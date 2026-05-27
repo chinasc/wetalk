@@ -38,7 +38,6 @@ async function handleAvatarChange() {
     try {
       const formData = new FormData()
       formData.append('avatar', file)
-      if (nickname.value) formData.append('nickname', nickname.value)
       if (phone.value) formData.append('phone', phone.value)
 
       const user = await authStore.updateProfile(formData)
@@ -57,7 +56,6 @@ async function handleSave() {
   showLoadingToast({ message: '保存中...', forbidClick: true, duration: 0 })
   try {
     const formData = new FormData()
-    formData.append('nickname', nickname.value)
     formData.append('phone', phone.value)
 
     await authStore.updateProfile(formData)
@@ -106,13 +104,7 @@ function goBack() {
 
       <!-- Form -->
       <van-cell-group inset style="margin-top: 20px; margin-left: 0; margin-right: 0;">
-        <van-field
-          v-model="nickname"
-          label="昵称"
-          placeholder="请输入昵称"
-          clearable
-          maxlength="20"
-        />
+        <van-cell title="昵称" :value="nickname" />
         <van-field
           v-model="phone"
           label="手机号"

@@ -113,6 +113,10 @@ export async function markRead(conversationId: number): Promise<void> {
   await http.post('/chat/mark-read', { conversation_id: conversationId })
 }
 
+export async function clearMessages(conversationId: number): Promise<void> {
+  await http.delete(`/chat/messages/${conversationId}`)
+}
+
 // ============ Upload ============
 
 export async function uploadImage(file: File): Promise<{ url: string }> {

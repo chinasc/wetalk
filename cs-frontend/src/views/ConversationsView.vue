@@ -23,38 +23,41 @@
       />
 
       <van-cell-group v-else inset class="conversation-list">
-        <van-cell
-          v-for="conv in conversations"
-          :key="conv.id"
-          class="conversation-cell"
-          :class="{ 'has-unread': conv.unread_count > 0 }"
-          clickable
-          @click="openChat(conv)"
-        >
-          <template #title>
-            <div class="conv-content">
-              <van-badge :content="conv.unread_count > 0 ? conv.unread_count : undefined" :max="99">
-                <van-image
-                  round
-                  width="48"
-                  height="48"
-                  :src="conv.user_avatar || defaultAvatar"
-                  fit="cover"
-                  class="conv-avatar"
-                />
-              </van-badge>
-              <div class="conv-info">
-                <div class="conv-top-row">
-                  <span class="conv-nickname">{{ conv.user_nickname }}</span>
-                  <span class="conv-time">{{ formatTime(conv.last_message_time) }}</span>
-                </div>
-                <div class="conv-last-msg" :class="{ 'unread-msg': conv.unread_count > 0 }">
-                  {{ formatLastMessage(conv.last_message_type, conv.last_message) }}
+        <van-swipe-cell v-for="conv in conversations" :key="conv.id">
+          <van-cell
+            class="conversation-cell"
+            :class="{ 'has-unread': conv.unread_count > 0 }"
+            clickable
+            @click="openChat(conv)"
+          >
+            <template #title>
+              <div class="conv-content">
+                <van-badge :content="conv.unread_count > 0 ? conv.unread_count : undefined" :max="99">
+                  <van-image
+                    round
+                    width="48"
+                    height="48"
+                    :src="conv.user_avatar || defaultAvatar"
+                    fit="cover"
+                    class="conv-avatar"
+                  />
+                </van-badge>
+                <div class="conv-info">
+                  <div class="conv-top-row">
+                    <span class="conv-nickname">{{ conv.user_nickname }}</span>
+                    <span class="conv-time">{{ formatTime(conv.last_message_time) }}</span>
+                  </div>
+                  <div class="conv-last-msg" :class="{ 'unread-msg': conv.unread_count > 0 }">
+                    {{ formatLastMessage(conv.last_message_type, conv.last_message) }}
+                  </div>
                 </div>
               </div>
-            </div>
+            </template>
+          </van-cell>
+          <template #right>
+            <van-button square type="danger" text="清除记录" class="swipe-btn" @click="handleClear(conv)" />
           </template>
-        </van-cell>
+        </van-swipe-cell>
       </van-cell-group>
     </van-pull-refresh>
 
@@ -65,6 +68,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { showConfirmDialog, showToast } from 'vant'
 import type { ConvItem } from '../stores/chat'
 import { useChatStore } from '../stores/chat'
 import { useAuthStore } from '../stores/auth'
@@ -123,6 +127,20 @@ function formatLastMessage(type: string, content: string): string {
 
 function openChat(conv: ConvItem): void {
   router.push(`/chat/${conv.id}`)
+}
+
+async function handleClear(conv: ConvItem): Promise<void> {
+  try {
+    await showConfirmDialog({ title: '清除聊天记录', message: `确定清除与 ${conv.user_nickname} 的聊天记录吗？此操作不可恢复。` })
+  } catch {
+    return
+  }
+  try {
+    await chatStore.clearMessages(conv.id)
+    showToast('记录已清除')
+  } catch {
+    showToast('操作失败')
+  }
 }
 
 function goProfile(): void {
@@ -259,5 +277,9 @@ onMounted(() => {
 .title-badge {
   margin-left: 6px;
   vertical-align: middle;
+}
+
+.swipe-btn {
+  height: 100%;
 }
 </style>

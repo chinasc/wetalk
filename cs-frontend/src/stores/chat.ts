@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { http } from '../api'
+import { http, clearMessages as apiClearMessages } from '../api'
 import { wsService } from '../services/websocket'
 import { playNotification } from '../services/notification'
 
@@ -181,6 +181,14 @@ export const useChatStore = defineStore('chat', () => {
     return drafts.get(convId) || ''
   }
 
+  async function clearMessages(convId: number) {
+    await apiClearMessages(convId)
+    if (currentConversationId.value === convId) {
+      currentMessages.value = []
+    }
+    await loadConversations()
+  }
+
   return {
     conversations,
     currentMessages,
@@ -199,5 +207,6 @@ export const useChatStore = defineStore('chat', () => {
     clearCurrentChat,
     saveDraft,
     getDraft,
+    clearMessages,
   }
 })
