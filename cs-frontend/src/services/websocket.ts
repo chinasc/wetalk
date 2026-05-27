@@ -15,6 +15,7 @@ class WebSocketService {
   private readHandlers: ReadHandler[] = []
   private statusHandlers: ((connected: boolean) => void)[] = []
   private onAuthSuccess: (() => void) | null = null
+  private kickedHandlers: (() => void)[] = []
 
   connect(token: string, onAuth?: () => void): void {
     this.token = token
@@ -41,7 +42,7 @@ class WebSocketService {
       this.send('auth', { token: this.token })
       this.pingTimer = setInterval(() => {
         this.send('ping', {})
-      }, 30000)
+      }, 2000)
     }
 
     this.ws.onmessage = (event: MessageEvent) => {
@@ -79,6 +80,12 @@ class WebSocketService {
       case 'message.read':
         for (const handler of this.readHandlers) {
           handler(msg.data as WsReadData)
+        }
+        break
+      case 'kicked':
+        this.cleanup()
+        for (const handler of this.kickedHandlers) {
+          handler()
         }
         break
     }
@@ -126,6 +133,14 @@ class WebSocketService {
     }
   }
 
+  onKicked(handler: () => void): () => void {
+    this.kickedHandlers.push(handler)
+    return () => {
+      const idx = this.kickedHandlers.indexOf(handler)
+      if (idx > -1) this.kickedHandlers.splice(idx, 1)
+    }
+  }
+
   private notifyStatus(connected: boolean): void {
     for (const handler of this.statusHandlers) {
       handler(connected)
@@ -167,6 +182,7 @@ class WebSocketService {
     this.messageHandlers = []
     this.readHandlers = []
     this.statusHandlers = []
+    this.kickedHandlers = []
   }
 }
 

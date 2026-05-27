@@ -285,6 +285,7 @@ function scrollToBottom(smooth = false): void {
 }
 
 function onBack(): void {
+  chatStore.saveDraft(conversationId.value, inputText.value)
   chatStore.clearCurrentChat()
   router.push('/')
 }
@@ -464,6 +465,8 @@ watch(() => chatStore.currentMessages.length, (newLen, oldLen) => {
 })
 
 onMounted(async () => {
+  inputText.value = chatStore.getDraft(conversationId.value)
+
   try {
     const convs = chatStore.conversations.length > 0
       ? chatStore.conversations
@@ -487,7 +490,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  // cleanup happens in clearCurrentChat via onBack or router guard
+  chatStore.saveDraft(conversationId.value, inputText.value)
 })
 </script>
 

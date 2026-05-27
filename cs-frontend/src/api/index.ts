@@ -210,4 +210,13 @@ export async function resetUserPassword(id: number): Promise<any> {
   return unwrap(res)
 }
 
+export async function updateCsUser(id: number, data: { nickname?: string; password?: string }): Promise<any> {
+  const res = await http.post(`/cs/users/${id}`, data)
+  return unwrap(res)
+}
+
+export async function deleteCsUser(id: number): Promise<void> {
+  await http.delete(`/cs/users/${id}`)
+}
+
 export { http }

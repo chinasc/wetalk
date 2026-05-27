@@ -31,6 +31,7 @@ export const useChatStore = defineStore('chat', () => {
   const currentConversationId = ref<number | null>(null)
   const loading = ref(false)
   const sending = ref(false)
+  const drafts = new Map<number, string>()
 
   const totalUnread = computed(() =>
     conversations.value.reduce((sum, c) => sum + (c.unread_count || 0), 0),
@@ -168,6 +169,18 @@ export const useChatStore = defineStore('chat', () => {
     currentMessages.value = []
   }
 
+  function saveDraft(convId: number, text: string) {
+    if (text.trim()) {
+      drafts.set(convId, text)
+    } else {
+      drafts.delete(convId)
+    }
+  }
+
+  function getDraft(convId: number): string {
+    return drafts.get(convId) || ''
+  }
+
   return {
     conversations,
     currentMessages,
@@ -184,5 +197,7 @@ export const useChatStore = defineStore('chat', () => {
     sendAlbumMessage,
     markConversationRead,
     clearCurrentChat,
+    saveDraft,
+    getDraft,
   }
 })

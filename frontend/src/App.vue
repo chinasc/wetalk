@@ -2,9 +2,15 @@
 import { watch } from 'vue'
 import { useAuthStore } from './stores/auth'
 import { useChatStore } from './stores/chat'
+import { wsService } from './services/websocket'
 
 const authStore = useAuthStore()
 const chatStore = useChatStore()
+
+wsService.on('kicked', () => {
+  authStore.logout()
+  window.location.reload()
+})
 
 watch(() => authStore.isLoggedIn, (val) => {
   if (val) {

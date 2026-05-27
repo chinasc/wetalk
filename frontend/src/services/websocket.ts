@@ -36,6 +36,19 @@ class WebSocketService {
     this.ws.onmessage = (event: MessageEvent) => {
       try {
         const msg = JSON.parse(event.data as string) as { event: string; data: Record<string, unknown> }
+        if (msg.event === 'kicked') {
+          this.stopPing()
+          this.shouldReconnect = false
+          if (this.ws) {
+            this.ws.close()
+            this.ws = null
+          }
+          const kickedHandlers = this.handlers.get('kicked')
+          if (kickedHandlers) {
+            kickedHandlers.forEach((handler) => handler(msg.data))
+          }
+          return
+        }
         const handlers = this.handlers.get(msg.event)
         if (handlers) {
           handlers.forEach((handler) => handler(msg.data))
@@ -77,7 +90,7 @@ class WebSocketService {
     this.stopPing()
     this.pingTimer = setInterval(() => {
       this.send('ping', {})
-    }, 30000)
+    }, 2000)
   }
 
   private stopPing(): void {

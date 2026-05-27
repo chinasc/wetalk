@@ -6,6 +6,7 @@
 import { onMounted } from 'vue'
 import { useAuthStore } from './stores/auth'
 import { useChatStore } from './stores/chat'
+import { wsService } from './services/websocket'
 
 const authStore = useAuthStore()
 const chatStore = useChatStore()
@@ -14,6 +15,13 @@ onMounted(() => {
   if (authStore.token) {
     chatStore.initWsListeners()
   }
+
+  wsService.onKicked(() => {
+    chatStore.clearCurrentChat()
+    chatStore.resetWsListeners()
+    authStore.logout()
+    window.location.href = '/login'
+  })
 })
 </script>
 

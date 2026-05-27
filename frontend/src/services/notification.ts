@@ -35,7 +35,20 @@ function createDingUrl(): string {
   return URL.createObjectURL(new Blob([buffer], { type: 'audio/wav' }))
 }
 
-let audio: HTMLAudioElement | null = null
+const audio = new Audio(createDingUrl())
+audio.volume = 1
+let activated = false
+
+function ensureActivated() {
+  if (activated) return
+  audio.play().then(() => {
+    audio.pause()
+    activated = true
+  }).catch(() => {})
+}
+
+document.addEventListener('click', ensureActivated, { once: true })
+document.addEventListener('touchstart', ensureActivated, { once: true })
 
 export function isSoundEnabled(): boolean {
   return localStorage.getItem(SOUND_KEY) !== 'false'
@@ -48,9 +61,6 @@ export function setSoundEnabled(enabled: boolean): void {
 export function playNotification(): void {
   if (!isSoundEnabled()) return
   try {
-    if (!audio) {
-      audio = new Audio(createDingUrl())
-    }
     audio.currentTime = 0
     audio.play().catch(() => {})
   } catch {

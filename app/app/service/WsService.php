@@ -10,6 +10,17 @@ class WsService
 
     public static function bind(int $userId, TcpConnection $connection): void
     {
+        // Kick existing connection for same user
+        if (isset(self::$connections[$userId])) {
+            $old = self::$connections[$userId];
+            $old->send(json_encode([
+                'event' => 'kicked',
+                'data' => ['msg' => '您的账号已在其他设备登录'],
+            ], JSON_UNESCAPED_UNICODE));
+            $old->close();
+            unset(self::$connections[$userId]);
+        }
+
         self::$connections[$userId] = $connection;
         \support\Redis::set('user_online:' . $userId, 1);
         \support\Redis::set('user_fd:' . $userId, $connection->id);

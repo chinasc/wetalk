@@ -4,7 +4,7 @@
 
     <div class="toolbar">
       <van-search v-model="keyword" placeholder="搜索用户名/昵称" shape="round" class="search-bar" @search="fetchUsers" @clear="fetchUsers" />
-      <van-button type="primary" size="small" round icon="plus" @click="showCreateDialog">创建用户</van-button>
+      <van-button type="primary" size="small" round icon="plus" @click="showCreateDialog">创建</van-button>
     </div>
 
     <van-loading v-if="loading" class="page-loading" />
@@ -28,7 +28,10 @@
           </div>
         </template>
         <template #value>
-          <van-button size="mini" plain type="primary" @click="onResetPassword(user)">重置密码</van-button>
+          <div class="cell-actions">
+            <van-button size="mini" plain type="primary" @click="showEditDialog(user)">编辑</van-button>
+            <van-button size="mini" plain type="danger" @click="onDeleteUser(user)">删除</van-button>
+          </div>
         </template>
       </van-cell>
     </van-cell-group>
@@ -51,6 +54,20 @@
       </div>
     </van-dialog>
 
+    <!-- 编辑用户弹窗 -->
+    <van-dialog
+      v-model:show="editVisible"
+      title="编辑用户"
+      show-cancel-button
+      :before-close="onEditClose"
+    >
+      <div class="dialog-form">
+        <van-field :model-value="editForm.username" label="用户名" readonly />
+        <van-field v-model="editForm.nickname" label="昵称" placeholder="请输入昵称" maxlength="30" />
+        <van-field v-model="editForm.password" label="新密码" type="password" placeholder="留空则不修改" />
+      </div>
+    </van-dialog>
+
     <!-- 创建成功提示 -->
     <van-dialog
       v-model:show="resultVisible"
@@ -70,7 +87,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast, showConfirmDialog } from 'vant'
-import { getCsUsers, createCsUser, resetUserPassword } from '../api'
+import { getCsUsers, createCsUser, resetUserPassword, updateCsUser, deleteCsUser } from '../api'
 
 const router = useRouter()
 const defaultAvatar = 'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg'
@@ -84,6 +101,10 @@ const hasMore = ref(false)
 // 创建用户
 const createVisible = ref(false)
 const createForm = reactive({ username: '', nickname: '', password: '' })
+
+// 编辑用户
+const editVisible = ref(false)
+const editForm = reactive({ id: 0, username: '', nickname: '', password: '' })
 
 // 创建结果
 const resultVisible = ref(false)
@@ -147,11 +168,47 @@ async function onCreateClose(action: string) {
   }
 }
 
+function showEditDialog(user: any) {
+  editForm.id = user.id
+  editForm.username = user.username || ''
+  editForm.nickname = user.nickname || ''
+  editForm.password = ''
+  editVisible.value = true
+}
+
+async function onEditClose(action: string) {
+  if (action !== 'confirm') return true
+  if (!editForm.nickname.trim()) {
+    showToast('请输入昵称')
+    return false
+  }
+  try {
+    const data: Record<string, string> = { nickname: editForm.nickname.trim() }
+    if (editForm.password) data.password = editForm.password
+    await updateCsUser(editForm.id, data)
+    showToast('更新成功')
+    fetchUsers()
+    return true
+  } catch (err: any) {
+    showToast(err.message || '更新失败')
+    return false
+  }
+}
+
 async function onResetPassword(user: any) {
   try {
     await showConfirmDialog({ title: '重置密码', message: `重置用户"${user.nickname || user.username}"的密码？将生成新的验证码。` })
     const res = await resetUserPassword(user.id)
     showToast(`新验证码: ${res.verify_code}`)
+    fetchUsers()
+  } catch { /* cancelled */ }
+}
+
+async function onDeleteUser(user: any) {
+  try {
+    await showConfirmDialog({ title: '确认删除', message: `删除用户"${user.nickname || user.username}"？此操作不可恢复。` })
+    await deleteCsUser(user.id)
+    showToast('已删除')
     fetchUsers()
   } catch { /* cancelled */ }
 }
@@ -248,6 +305,12 @@ onMounted(() => {
 .verify-code {
   color: #667eea;
   cursor: pointer;
+}
+
+.cell-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .load-more {
