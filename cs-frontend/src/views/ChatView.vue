@@ -320,7 +320,8 @@ async function onFileSelected(event: Event): Promise<void> {
   const validFiles: File[] = []
   for (let i = 0; i < files.length; i++) {
     const file = files[i]
-    if (!file.type.startsWith('image/')) continue
+    const isImage = file.type.startsWith('image/') || /\.(jpe?g|png|gif|bmp|webp|heic|heif)$/i.test(file.name)
+    if (!isImage) continue
     if (file.size > 10 * 1024 * 1024) continue
     validFiles.push(file)
   }
