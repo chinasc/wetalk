@@ -2,7 +2,7 @@ const SOUND_KEY = 'cs_sound_enabled'
 
 function createDingUrl(): string {
   const sampleRate = 44100
-  const duration = 0.18
+  const duration = 0.25
   const numSamples = Math.floor(sampleRate * duration)
   const buffer = new ArrayBuffer(44 + numSamples * 2)
   const view = new DataView(buffer)
@@ -27,29 +27,35 @@ function createDingUrl(): string {
 
   for (let i = 0; i < numSamples; i++) {
     const t = i / sampleRate
-    const envelope = Math.exp(-t * 18)
-    const sample = Math.sin(2 * Math.PI * 880 * t) * envelope * 0.45
+    const envelope = Math.exp(-t * 14)
+    const sample = (Math.sin(2 * Math.PI * 880 * t) * 0.5 + Math.sin(2 * Math.PI * 1320 * t) * 0.3) * envelope
     view.setInt16(44 + i * 2, Math.max(-32768, Math.min(32767, sample * 32767)), true)
   }
 
   return URL.createObjectURL(new Blob([buffer], { type: 'audio/wav' }))
 }
 
-const audioUrl = createDingUrl()
-const audio = new Audio(audioUrl)
-audio.volume = 1
+const audio = new Audio(createDingUrl())
+audio.volume = 1.0
 audio.preload = 'auto'
-let activated = false
 
-function ensureActivated() {
-  if (activated) return
-  activated = true
-  document.removeEventListener('click', ensureActivated)
-  document.removeEventListener('touchstart', ensureActivated)
+let unlocked = false
+
+function unlock() {
+  if (unlocked) return
+  unlocked = true
+  audio.play().then(() => {
+    audio.pause()
+    audio.currentTime = 0
+  }).catch(() => {})
+  document.removeEventListener('click', unlock)
+  document.removeEventListener('touchstart', unlock)
+  document.removeEventListener('touchend', unlock)
 }
 
-document.addEventListener('click', ensureActivated)
-document.addEventListener('touchstart', ensureActivated)
+document.addEventListener('click', unlock)
+document.addEventListener('touchstart', unlock)
+document.addEventListener('touchend', unlock)
 
 export function isSoundEnabled(): boolean {
   return localStorage.getItem(SOUND_KEY) !== 'false'
@@ -61,10 +67,11 @@ export function setSoundEnabled(enabled: boolean): void {
 
 export function playNotification(): void {
   if (!isSoundEnabled()) return
+  if (!unlocked) return
   try {
-    const snd = new Audio(audioUrl)
-    snd.volume = 1
-    snd.play().catch(() => {})
+    audio.pause()
+    audio.currentTime = 0
+    audio.play().catch(() => {})
   } catch {
     // silently fail
   }
