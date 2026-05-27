@@ -69,7 +69,7 @@ class UserController
         $user->verify_code = $verifyCode;
         $user->verify_code_used = 0;
         $user->password_set = 0;
-        $user->password = '';
+        $user->password = password_hash('123456', PASSWORD_DEFAULT);
         $user->save();
 
         return json([
@@ -101,5 +101,28 @@ class UserController
         }
         $user->delete();
         return json(['code' => 0, 'msg' => '已删除']);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $user = User::find($id);
+        if (!$user) {
+            return json(['code' => 1, 'msg' => '用户不存在']);
+        }
+
+        $data = [];
+        if ($nickname = trim($request->post('nickname', ''))) {
+            $data['nickname'] = $nickname;
+        }
+        if ($password = $request->post('password', '')) {
+            $data['password'] = password_hash($password, PASSWORD_DEFAULT);
+            $data['password_set'] = 1;
+        }
+        if (empty($data)) {
+            return json(['code' => 1, 'msg' => '无更新内容']);
+        }
+
+        $user->update($data);
+        return json(['code' => 0, 'msg' => '更新成功', 'data' => $user->fresh()]);
     }
 }

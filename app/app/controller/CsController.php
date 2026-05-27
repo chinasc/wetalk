@@ -16,6 +16,7 @@ class CsController
             ->map(function ($user) {
                 return [
                     'id' => $user->id,
+                    'username' => $user->username,
                     'nickname' => $user->nickname,
                     'avatar' => $user->avatar,
                     'online' => WsService::isOnline($user->id),

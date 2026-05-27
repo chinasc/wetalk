@@ -48,8 +48,14 @@
         </template>
       </el-table-column>
       <el-table-column prop="created_at" label="注册时间" width="180" />
-      <el-table-column label="操作" min-width="280">
+      <el-table-column label="操作" min-width="320">
         <template #default="{ row }">
+          <el-button
+            v-if="row.role === 'user'"
+            size="small"
+            type="warning"
+            @click="handleSetCs(row)"
+          >设为客服</el-button>
           <el-button size="small" @click="handleResetPassword(row)">重置密码</el-button>
           <el-button
             size="small"
@@ -113,7 +119,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
-import { getUserList, createUser, resetUserPassword, toggleUserStatus, deleteUser } from '@/api'
+import { getUserList, createUser, resetUserPassword, toggleUserStatus, deleteUser, setCs } from '@/api'
 import type { User } from '@/types'
 
 const loading = ref(false)
@@ -196,6 +202,23 @@ async function handleResetPassword(row: any) {
   } catch (err: any) {
     if (err !== 'cancel') {
       ElMessage.error(err.message || '重置密码失败')
+    }
+  }
+}
+
+async function handleSetCs(row: any) {
+  try {
+    await ElMessageBox.confirm(`确定将用户 ${row.nickname || row.username} 设为客服？`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+    await setCs(row.id)
+    ElMessage.success('设置成功')
+    fetchUsers()
+  } catch (err: any) {
+    if (err !== 'cancel') {
+      ElMessage.error(err.message || '设置失败')
     }
   }
 }

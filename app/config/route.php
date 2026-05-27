@@ -64,6 +64,7 @@ Route::group('/api', function () {
         // 用户管理
         Route::get('/users', [app\controller\UserController::class, 'index']);
         Route::post('/users', [app\controller\UserController::class, 'store']);
+        Route::post('/users/update/{id}', [app\controller\UserController::class, 'update']);
         Route::post('/users/reset-password/{id}', [app\controller\UserController::class, 'resetPassword']);
         Route::post('/users/toggle-status/{id}', [app\controller\UserController::class, 'toggleStatus']);
         Route::delete('/users/{id}', [app\controller\UserController::class, 'destroy']);

@@ -66,6 +66,10 @@ export function deleteUser(id: number) {
   return http.delete(`/admin/users/${id}`)
 }
 
+export function updateUser(id: number, data: { nickname?: string; password?: string }) {
+  return http.post(`/admin/users/update/${id}`, data)
+}
+
 // CS
 export function getCsList() {
   return http.get<any[]>('/cs/list')
