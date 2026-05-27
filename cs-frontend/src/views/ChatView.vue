@@ -188,6 +188,7 @@
       ref="fileInputRef"
       type="file"
       accept="image/*"
+      multiple
       style="display: none"
       @change="onFileSelected"
     />
@@ -312,22 +313,29 @@ function onPickImage(): void {
 
 async function onFileSelected(event: Event): Promise<void> {
   const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-  if (!file) return
+  const files = target.files
+  if (!files || files.length === 0) return
   target.value = ''
 
-  if (!file.type.startsWith('image/')) {
-    showToast('请选择图片文件')
-    return
+  const validFiles: File[] = []
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i]
+    if (!file.type.startsWith('image/')) continue
+    if (file.size > 10 * 1024 * 1024) continue
+    validFiles.push(file)
   }
-  if (file.size > 10 * 1024 * 1024) {
-    showToast('图片不能超过10MB')
+
+  if (validFiles.length === 0) {
+    showToast('请选择有效的图片文件')
     return
   }
 
-  showLoadingToast({ message: '发送中...', forbidClick: true, duration: 0 })
+  showLoadingToast({ message: `发送中 (0/${validFiles.length})...`, forbidClick: true, duration: 0 })
   try {
-    await chatStore.sendImage(conversationId.value, file)
+    for (let i = 0; i < validFiles.length; i++) {
+      showLoadingToast({ message: `发送中 (${i + 1}/${validFiles.length})...`, forbidClick: true, duration: 0 })
+      await chatStore.sendImage(conversationId.value, validFiles[i])
+    }
     scrollToBottom(true)
   } catch {
     showToast('发送失败')
