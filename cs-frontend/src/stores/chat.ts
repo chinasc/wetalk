@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { http } from '../api'
 import { wsService } from '../services/websocket'
+import { playNotification } from '../services/notification'
 
 export interface ChatMessage {
   id: number
@@ -54,6 +55,9 @@ export const useChatStore = defineStore('chat', () => {
 
     wsService.onMessage((data: any) => {
       const msg = data as ChatMessage
+      const myId = Number(localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')!).id : 0)
+      if (msg.sender_id !== myId) playNotification()
+
       if (currentConversationId.value && msg.conversation_id === currentConversationId.value) {
         const exists = currentMessages.value.some((m) => m.id === msg.id)
         if (!exists) {

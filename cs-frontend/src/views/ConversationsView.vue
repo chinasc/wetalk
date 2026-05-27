@@ -81,7 +81,9 @@ const conversations = computed(() => chatStore.conversations)
 
 const menuActions = [
   { name: '个人信息', value: 'profile' },
-  { name: '相册集', value: 'albums' },
+  { name: '用户管理', value: 'user-manage' },
+  { name: '相册管理', value: 'album-manage' },
+  { name: '常用语管理', value: 'quick-replies' },
   { name: '退出登录', value: 'logout', color: '#ee0a24' },
 ]
 
@@ -131,8 +133,12 @@ async function onMenuSelect(action: any): Promise<void> {
   showMenu.value = false
   if (action.value === 'profile') {
     router.push('/profile')
-  } else if (action.value === 'albums') {
-    router.push('/albums')
+  } else if (action.value === 'user-manage') {
+    router.push('/user-manage')
+  } else if (action.value === 'album-manage') {
+    router.push('/album-manage')
+  } else if (action.value === 'quick-replies') {
+    router.push('/quick-replies')
   } else if (action.value === 'logout') {
     chatStore.clearCurrentChat()
     chatStore.resetWsListeners()

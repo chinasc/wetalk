@@ -35,6 +35,30 @@ Route::group('/api', function () {
     // 常用语（客服端查看用）
     Route::get('/quick-replies', [app\controller\QuickReplyController::class, 'index']);
 
+    // 常用语管理（客服端）
+    Route::group('/cs/quick-replies', function () {
+        Route::post('', [app\controller\QuickReplyController::class, 'store']);
+        Route::post('/{id}', [app\controller\QuickReplyController::class, 'update']);
+        Route::delete('/{id}', [app\controller\QuickReplyController::class, 'destroy']);
+    })->middleware([app\middleware\CsAuth::class]);
+
+    // 用户管理（客服端）
+    Route::group('/cs/users', function () {
+        Route::get('', [app\controller\UserController::class, 'index']);
+        Route::post('', [app\controller\UserController::class, 'store']);
+        Route::post('/{id}/reset-password', [app\controller\UserController::class, 'resetPassword']);
+    })->middleware([app\middleware\CsAuth::class]);
+
+    // 相册管理（客服端）
+    Route::group('/cs/albums', function () {
+        Route::post('', [app\controller\AlbumController::class, 'store']);
+        Route::post('/{id}', [app\controller\AlbumController::class, 'update']);
+        Route::delete('/{id}', [app\controller\AlbumController::class, 'destroy']);
+        Route::post('/{id}/images', [app\controller\AlbumController::class, 'uploadImage']);
+        Route::post('/images/{imageId}', [app\controller\AlbumController::class, 'updateImage']);
+        Route::delete('/images/{imageId}', [app\controller\AlbumController::class, 'deleteImage']);
+    })->middleware([app\middleware\CsAuth::class]);
+
     // 管理后台路由
     Route::group('/admin', function () {
         // 用户管理

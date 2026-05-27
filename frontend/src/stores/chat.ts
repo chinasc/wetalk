@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import type { Conversation, ChatMessage } from '../types'
 import { chatApi } from '../api'
 import { wsService } from '../services/websocket'
+import { playNotification } from '../services/notification'
+import { useAuthStore } from './auth'
 
 export const useChatStore = defineStore('chat', () => {
   const conversations = ref<Conversation[]>([])
@@ -31,6 +33,9 @@ export const useChatStore = defineStore('chat', () => {
 
     wsService.on('message.new', (data) => {
       const msg = data as unknown as ChatMessage
+      const authStore = useAuthStore()
+      if (msg.sender_id !== authStore.user?.id) playNotification()
+
       if (msg.conversation_id === currentConversationId.value) {
         const exists = currentMessages.value.some((m) => m.id === msg.id)
         if (!exists) {

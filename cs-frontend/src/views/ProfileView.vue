@@ -4,12 +4,19 @@ import { useRouter } from 'vue-router'
 import { showToast, showLoadingToast, closeToast } from 'vant'
 import { useAuthStore } from '../stores/auth'
 import { getUserInfo, http } from '../api'
+import { isSoundEnabled, setSoundEnabled } from '../services/notification'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
 const nickname = ref('')
 const avatarUrl = ref('')
+const soundEnabled = ref(isSoundEnabled())
+
+function onSoundToggle(val: boolean) {
+  soundEnabled.value = val
+  setSoundEnabled(val)
+}
 
 onMounted(async () => {
   try {
@@ -94,6 +101,14 @@ function goBack() {
         <van-field v-model="nickname" label="昵称" placeholder="请输入昵称" clearable maxlength="20" />
         <van-field :model-value="authStore.user?.username || ''" label="用户名" readonly />
         <van-field :model-value="authStore.user?.role === 'customer_service' ? '客服' : authStore.user?.role" label="角色" readonly />
+      </van-cell-group>
+
+      <van-cell-group inset style="margin-top: 16px; margin-left: 0; margin-right: 0;">
+        <van-cell title="消息提示音" center>
+          <template #right-icon>
+            <van-switch :model-value="soundEnabled" size="20" @update:model-value="onSoundToggle" />
+          </template>
+        </van-cell>
       </van-cell-group>
 
       <div style="margin-top: 24px; padding: 0 4px;">

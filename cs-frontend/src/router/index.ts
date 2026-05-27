@@ -7,6 +7,9 @@ import ProfileView from '../views/ProfileView.vue'
 import AlbumsView from '../views/AlbumsView.vue'
 import AlbumSendView from '../views/AlbumSendView.vue'
 import AlbumDetailView from '../views/AlbumDetailView.vue'
+import QuickRepliesView from '../views/QuickRepliesView.vue'
+import AlbumManageView from '../views/AlbumManageView.vue'
+import UserManageView from '../views/UserManageView.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -49,6 +52,30 @@ const routes: RouteRecordRaw[] = [
     path: '/album/:id',
     name: 'album-detail',
     component: AlbumDetailView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/quick-replies',
+    name: 'quick-replies',
+    component: QuickRepliesView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/album-manage',
+    name: 'album-manage',
+    component: AlbumManageView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/album-manage/:id',
+    name: 'album-manage-detail',
+    component: AlbumManageView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/user-manage',
+    name: 'user-manage',
+    component: UserManageView,
     meta: { requiresAuth: true },
   },
 ]
