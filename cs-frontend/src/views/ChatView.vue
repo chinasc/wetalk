@@ -50,7 +50,7 @@
             :src="msg.content"
             fit="cover"
             class="msg-image"
-            @click="previewImage(msg.content)"
+            @click.stop="previewImage(msg.content)"
           />
 
           <!-- Album message -->
@@ -194,7 +194,7 @@
     />
 
     <!-- Image preview -->
-    <van-image-preview v-model:show="previewVisible" :images="previewImages" />
+    <van-image-preview v-model:show="previewVisible" :images="previewImages" :closeable="true" @close="previewVisible = false" />
   </div>
 </template>
 
@@ -313,13 +313,14 @@ function onPickImage(): void {
 
 async function onFileSelected(event: Event): Promise<void> {
   const target = event.target as HTMLInputElement
-  const files = target.files
-  if (!files || files.length === 0) return
+  const fileList = target.files
+  if (!fileList || fileList.length === 0) return
+
+  const files = Array.from(fileList)
   target.value = ''
 
   const validFiles: File[] = []
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i]
+  for (const file of files) {
     const isImage = file.type.startsWith('image/') || /\.(jpe?g|png|gif|bmp|webp|heic|heif)$/i.test(file.name)
     if (!isImage) continue
     if (file.size > 10 * 1024 * 1024) continue
@@ -400,9 +401,7 @@ async function onSelectQuickReply(item: QuickReply): Promise<void> {
 }
 
 function onBubbleClick(msg: any): void {
-  if (msg.type === 'image') {
-    previewImage(msg.content)
-  } else if (msg.type === 'album') {
+  if (msg.type === 'album') {
     try {
       const data = JSON.parse(msg.content)
       if (data.id) {
