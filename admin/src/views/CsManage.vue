@@ -1,7 +1,7 @@
 <template>
   <div class="cs-manage">
     <div class="toolbar">
-      <span />
+      <el-button type="primary" icon="Plus" @click="showCreateDialog">创建客服</el-button>
       <el-button @click="fetchCsList" icon="Refresh">刷新</el-button>
     </div>
 
@@ -64,6 +64,25 @@
         <el-button type="primary" @click="codeDialogVisible = false">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 创建客服弹窗 -->
+    <el-dialog v-model="createDialogVisible" title="创建客服" width="460px" @close="resetCreateForm">
+      <el-form :model="createForm" ref="createFormRef" :rules="createRules" label-width="80px">
+        <el-form-item label="用户名" prop="username">
+          <el-input v-model="createForm.username" placeholder="请输入用户名（登录账号）" />
+        </el-form-item>
+        <el-form-item label="昵称" prop="nickname">
+          <el-input v-model="createForm.nickname" placeholder="请输入昵称" />
+        </el-form-item>
+        <el-form-item label="密码" prop="password">
+          <el-input v-model="createForm.password" type="password" show-password placeholder="请输入登录密码" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="createDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="createLoading" @click="handleCreate">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -71,7 +90,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
-import { getCsList, removeCs, resetUserPassword, updateUser } from '@/api'
+import { getCsList, removeCs, resetUserPassword, updateUser, createUser, setCs } from '@/api'
 
 const loading = ref(false)
 const csList = ref<any[]>([])
@@ -83,6 +102,16 @@ const editForm = reactive({ id: 0, username: '', nickname: '', password: '' })
 
 const codeDialogVisible = ref(false)
 const verifyCode = ref('')
+
+const createDialogVisible = ref(false)
+const createLoading = ref(false)
+const createFormRef = ref<FormInstance>()
+const createForm = reactive({ username: '', nickname: '', password: '' })
+const createRules = {
+  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  nickname: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+}
 
 async function fetchCsList() {
   loading.value = true
@@ -110,6 +139,36 @@ function resetEditForm() {
   editForm.username = ''
   editForm.nickname = ''
   editForm.password = ''
+}
+
+function showCreateDialog() {
+  createForm.username = ''
+  createForm.nickname = ''
+  createForm.password = ''
+  createDialogVisible.value = true
+}
+
+function resetCreateForm() {
+  createFormRef.value?.resetFields()
+}
+
+async function handleCreate() {
+  const valid = await createFormRef.value?.validate().catch(() => false)
+  if (!valid) return
+
+  createLoading.value = true
+  try {
+    const res = await createUser({ username: createForm.username, nickname: createForm.nickname, password: createForm.password })
+    const userId = res.data.id
+    await setCs(userId)
+    ElMessage.success('创建客服成功')
+    createDialogVisible.value = false
+    fetchCsList()
+  } catch (err: any) {
+    ElMessage.error(err.message || '创建失败')
+  } finally {
+    createLoading.value = false
+  }
 }
 
 async function handleEdit() {
