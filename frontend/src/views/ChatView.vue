@@ -166,23 +166,31 @@ function isSelf(msg: ChatMessage) {
   return msg.sender_type === 'user'
 }
 
-async function onLongPress(msg: ChatMessage) {
+function onMsgClick(msg: ChatMessage) {
   if (msg.type === 'system') return
   activeMsg.value = msg
   const isSelfMsg = msg.sender_id === authStore.user?.id
-  actionItems.value = isSelfMsg
-    ? [{ name: '撤回', value: 'recall' }, { name: '删除', value: 'delete', color: '#ee0a24' }]
-    : [{ name: '删除', value: 'delete', color: '#ee0a24' }]
+  const actions: { name: string; value: string; color?: string }[] = []
+  if (msg.type === 'image') actions.push({ name: '查看大图', value: 'preview' })
+  if (msg.type === 'album') actions.push({ name: '查看相册', value: 'album' })
+  if (isSelfMsg) actions.push({ name: '撤回', value: 'recall' })
+  actions.push({ name: '删除', value: 'delete', color: '#ee0a24' })
+  actionItems.value = actions
   actionVisible.value = true
 }
 
 async function onActionSelect(item: any) {
   actionVisible.value = false
   if (!activeMsg.value) return
-  if (item.value === 'recall') {
-    try { await chatStore.recallMessage(activeMsg.value.id) } catch { showToast('撤回失败') }
+  const msg = activeMsg.value
+  if (item.value === 'preview') {
+    showImagePreview([msg.content])
+  } else if (item.value === 'album') {
+    openAlbum(msg)
+  } else if (item.value === 'recall') {
+    try { await chatStore.recallMessage(msg.id) } catch { showToast('撤回失败') }
   } else if (item.value === 'delete') {
-    try { await chatStore.deleteMessage(activeMsg.value.id) } catch { showToast('删除失败') }
+    try { await chatStore.deleteMessage(msg.id) } catch { showToast('删除失败') }
   }
 }
 
@@ -244,18 +252,17 @@ function goBack() {
             {{ msg.content }}
           </div>
           <!-- Text bubble -->
-          <div v-else-if="msg.type === 'text'" class="msg-bubble" @longpress="onLongPress(msg)">
+          <div v-else-if="msg.type === 'text'" class="msg-bubble" @click="onMsgClick(msg)">
             {{ msg.content }}
           </div>
           <!-- Image bubble -->
-          <div v-else-if="msg.type === 'image'" class="msg-image-wrap" @longpress="onLongPress(msg)">
+          <div v-else-if="msg.type === 'image'" class="msg-image-wrap" @click="onMsgClick(msg)">
             <van-image
               :src="msg.content"
               fit="cover"
               width="160"
               radius="8"
               class="msg-image"
-              @click="previewImage(msg.content)"
             >
               <template #error>
                 <div class="msg-image-error">
@@ -265,7 +272,7 @@ function goBack() {
             </van-image>
           </div>
           <!-- Album bubble -->
-          <div v-else-if="msg.type === 'album'" class="msg-album-bubble" @click="openAlbum(msg)" @longpress="onLongPress(msg)">
+          <div v-else-if="msg.type === 'album'" class="msg-album-bubble" @click="onMsgClick(msg)">
             <van-image
               :src="parseAlbumCover(msg.content)"
               fit="cover"
@@ -399,6 +406,8 @@ function goBack() {
   font-size: 15px;
   line-height: 1.5;
   word-break: break-word;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .chat-message-row.other .msg-bubble {

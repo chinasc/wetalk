@@ -40,7 +40,7 @@
         />
 
         <!-- Bubble -->
-        <div class="msg-bubble" @click="onBubbleClick(msg)" @longpress="onLongPress(msg)">
+        <div class="msg-bubble" @click="onBubbleClick(msg)">
           <!-- System message (recalled) -->
           <span v-if="msg.type === 'system'" class="msg-system">{{ msg.content }}</span>
 
@@ -53,7 +53,6 @@
             :src="msg.content"
             fit="cover"
             class="msg-image"
-            @click.stop="previewImage(msg.content)"
           />
 
           <!-- Album message -->
@@ -411,38 +410,37 @@ async function onSelectQuickReply(item: QuickReply): Promise<void> {
   }
 }
 
-async function onLongPress(msg: any): Promise<void> {
-  if (msg.type === 'system') return
-  activeMsg.value = msg
-  const myId = authStore.user?.id
-  const isSelfMsg = msg.sender_id === myId
-  actionItems.value = isSelfMsg
-    ? [{ name: '撤回', value: 'recall' }, { name: '删除', value: 'delete', color: '#ee0a24' }]
-    : [{ name: '删除', value: 'delete', color: '#ee0a24' }]
-  actionVisible.value = true
-}
-
 async function onActionSelect(item: any): Promise<void> {
   actionVisible.value = false
   if (!activeMsg.value) return
-  if (item.value === 'recall') {
-    try { await chatStore.recallMessage(activeMsg.value.id) } catch { showToast('撤回失败') }
+  const msg = activeMsg.value
+  if (item.value === 'preview') {
+    previewImages.value = [msg.content]
+    previewVisible.value = true
+  } else if (item.value === 'album') {
+    try {
+      const data = JSON.parse(msg.content)
+      if (data.id) router.push(`/album/${data.id}`)
+    } catch { /* ignore */ }
+  } else if (item.value === 'recall') {
+    try { await chatStore.recallMessage(msg.id) } catch { showToast('撤回失败') }
   } else if (item.value === 'delete') {
-    try { await chatStore.deleteMessage(activeMsg.value.id) } catch { showToast('删除失败') }
+    try { await chatStore.deleteMessage(msg.id) } catch { showToast('删除失败') }
   }
 }
 
 function onBubbleClick(msg: any): void {
-  if (msg.type === 'album') {
-    try {
-      const data = JSON.parse(msg.content)
-      if (data.id) {
-        router.push(`/album/${data.id}`)
-      }
-    } catch {
-      // ignore
-    }
-  }
+  if (msg.type === 'system') return
+  activeMsg.value = msg
+  const myId = authStore.user?.id
+  const isSelfMsg = msg.sender_id === myId
+  const actions: { name: string; value: string; color?: string }[] = []
+  if (msg.type === 'image') actions.push({ name: '查看大图', value: 'preview' })
+  if (msg.type === 'album') actions.push({ name: '查看相册', value: 'album' })
+  if (isSelfMsg) actions.push({ name: '撤回', value: 'recall' })
+  actions.push({ name: '删除', value: 'delete', color: '#ee0a24' })
+  actionItems.value = actions
+  actionVisible.value = true
 }
 
 // ============ Scroll / Load More ============
@@ -611,6 +609,8 @@ onUnmounted(() => {
   border-radius: 12px;
   word-break: break-all;
   position: relative;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .message-other .msg-bubble {
