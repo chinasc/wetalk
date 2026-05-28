@@ -31,7 +31,26 @@ export const useChatStore = defineStore('chat', () => {
   const currentConversationId = ref<number | null>(null)
   const loading = ref(false)
   const sending = ref(false)
-  const drafts = new Map<number, string>()
+  const DRAFT_KEY = 'cs_chat_drafts'
+
+  function loadDrafts(): Map<number, string> {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY)
+      if (!raw) return new Map()
+      const obj = JSON.parse(raw)
+      return new Map(Object.entries(obj).map(([k, v]) => [Number(k), v as string]))
+    } catch {
+      return new Map()
+    }
+  }
+
+  function persistDrafts(drafts: Map<number, string>) {
+    const obj: Record<number, string> = {}
+    drafts.forEach((v, k) => { obj[k] = v })
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(obj))
+  }
+
+  const drafts = loadDrafts()
 
   const totalUnread = computed(() =>
     conversations.value.reduce((sum, c) => sum + (c.unread_count || 0), 0),
@@ -183,6 +202,7 @@ export const useChatStore = defineStore('chat', () => {
     } else {
       drafts.delete(convId)
     }
+    persistDrafts(drafts)
   }
 
   function getDraft(convId: number): string {

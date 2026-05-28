@@ -307,6 +307,7 @@ async function onSend(): Promise<void> {
   const text = inputText.value.trim()
   if (!text) return
   inputText.value = ''
+  chatStore.saveDraft(conversationId.value, '')
   try {
     await chatStore.sendTextMessage(conversationId.value, text)
     scrollToBottom(true)
