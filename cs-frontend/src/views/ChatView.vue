@@ -82,36 +82,15 @@
       </div>
 
       <div v-if="messages.length === 0 && !chatStore.loading" class="empty-chat">
-        <van-empty description="暂无消息" image="chat" />
+        <van-empty description="暂无消息" image="search" />
       </div>
     </div>
 
     <!-- Bottom toolbar -->
     <div class="chat-toolbar">
-      <van-button
-        size="small"
-        icon="chat-o"
-        class="toolbar-btn"
-        @click="showQuickReplySheet = true"
-      >
-        常用语
-      </van-button>
-      <van-button
-        size="small"
-        icon="photo-o"
-        class="toolbar-btn"
-        @click="showAlbumSheet = true"
-      >
-        相册
-      </van-button>
-      <van-button
-        size="small"
-        icon="description"
-        class="toolbar-btn"
-        @click="onPickImage"
-      >
-        图片
-      </van-button>
+      <div class="plus-trigger" @click="showPlusMenu = !showPlusMenu">
+        <van-icon :name="showPlusMenu ? 'cross' : 'add-o'" size="24" color="#666" />
+      </div>
       <van-field
         v-model="inputText"
         type="textarea"
@@ -121,6 +100,7 @@
         placeholder="输入消息..."
         class="chat-input"
         @keyup.enter.prevent="onSend"
+        @focus="showPlusMenu = false"
       />
       <van-button
         type="primary"
@@ -132,6 +112,22 @@
       >
         发送
       </van-button>
+    </div>
+
+    <!-- Plus menu panel -->
+    <div v-if="showPlusMenu" class="plus-menu">
+      <div class="plus-menu-item" @click="showPlusMenu = false; showQuickReplySheet = true">
+        <van-icon name="chat-o" size="22" />
+        <span>常用语</span>
+      </div>
+      <div class="plus-menu-item" @click="showPlusMenu = false; showAlbumSheet = true">
+        <van-icon name="photo-o" size="22" />
+        <span>相册</span>
+      </div>
+      <div class="plus-menu-item" @click="showPlusMenu = false; onPickImage()">
+        <van-icon name="description" size="22" />
+        <span>图片</span>
+      </div>
     </div>
 
     <!-- Album ActionSheet -->
@@ -226,6 +222,7 @@ const messageListRef = ref<HTMLElement | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const previewVisible = ref(false)
 const previewImages = ref<string[]>([])
+const showPlusMenu = ref(false)
 
 // Message action sheet
 const actionVisible = ref(false)
@@ -686,7 +683,7 @@ onUnmounted(() => {
 .chat-toolbar {
   display: flex;
   align-items: flex-end;
-  gap: 6px;
+  gap: 8px;
   padding: 8px 10px;
   padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   background: #fff;
@@ -694,11 +691,21 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-.toolbar-btn {
+.plus-trigger {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  font-size: 12px;
-  height: 36px;
-  padding: 0 8px;
+  margin-bottom: 2px;
+  cursor: pointer;
+}
+
+.plus-trigger:active {
+  background: #f5f5f5;
 }
 
 .chat-input {
@@ -722,10 +729,38 @@ onUnmounted(() => {
 
 .send-btn {
   flex-shrink: 0;
-  height: 36px;
+  height: 32px;
   padding: 0 12px;
-  border-radius: 18px;
+  border-radius: 16px;
   font-size: 14px;
+}
+
+.plus-menu {
+  display: flex;
+  justify-content: flex-start;
+  gap: 20px;
+  padding: 12px 16px;
+  background: #f7f8fa;
+  border-top: 1px solid #e8e8e8;
+  flex-shrink: 0;
+}
+
+.plus-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  min-width: 52px;
+}
+
+.plus-menu-item:active {
+  opacity: 0.7;
+}
+
+.plus-menu-item span {
+  font-size: 11px;
+  color: #666;
 }
 
 /* Album action sheet */
