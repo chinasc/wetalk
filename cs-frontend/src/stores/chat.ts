@@ -91,7 +91,21 @@ export const useChatStore = defineStore('chat', () => {
           conv.unread_count = (conv.unread_count || 0) + 1
         }
       }
-      loadConversations().catch(() => {})
+
+      // Move conversation to top locally
+      const idx = conversations.value.findIndex((c) => c.id === msg.conversation_id)
+      if (idx > 0) {
+        const [conv] = conversations.value.splice(idx, 1)
+        conv.last_message = msg.type === 'text' ? msg.content : msg.type === 'album' ? '[相册]' : '[图片]'
+        conv.last_message_type = msg.type
+        conv.last_message_time = msg.created_at
+        conversations.value = [conv, ...conversations.value]
+      } else if (idx === 0) {
+        const conv = conversations.value[0]
+        conv.last_message = msg.type === 'text' ? msg.content : msg.type === 'album' ? '[相册]' : '[图片]'
+        conv.last_message_type = msg.type
+        conv.last_message_time = msg.created_at
+      }
     })
 
     wsService.onRecall((data: any) => {
@@ -130,6 +144,16 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  function moveToTop(convId: number, lastMsg: string, lastMsgType: string, lastMsgTime: string) {
+    const idx = conversations.value.findIndex((c) => c.id === convId)
+    if (idx === -1) return
+    const [conv] = conversations.value.splice(idx, 1)
+    conv.last_message = lastMsg
+    conv.last_message_type = lastMsgType
+    conv.last_message_time = lastMsgTime
+    conversations.value = [conv, ...conversations.value]
+  }
+
   async function sendTextMessage(convId: number, content: string) {
     sending.value = true
     try {
@@ -141,7 +165,7 @@ export const useChatStore = defineStore('chat', () => {
       if (msg && !currentMessages.value.some((m) => m.id === msg.id)) {
         currentMessages.value = [...currentMessages.value, msg]
       }
-      loadConversations().catch(() => {})
+      moveToTop(convId, content, 'text', msg.created_at)
     } finally {
       sending.value = false
     }
@@ -160,7 +184,7 @@ export const useChatStore = defineStore('chat', () => {
       if (msg && !currentMessages.value.some((m) => m.id === msg.id)) {
         currentMessages.value = [...currentMessages.value, msg]
       }
-      loadConversations().catch(() => {})
+      moveToTop(convId, '[图片]', 'image', msg.created_at)
     } finally {
       sending.value = false
     }
@@ -178,7 +202,7 @@ export const useChatStore = defineStore('chat', () => {
       if (msg && !currentMessages.value.some((m) => m.id === msg.id)) {
         currentMessages.value = [...currentMessages.value, msg]
       }
-      loadConversations().catch(() => {})
+      moveToTop(convId, `[相册] ${albumTitle}`, 'album', msg.created_at)
     } finally {
       sending.value = false
     }
