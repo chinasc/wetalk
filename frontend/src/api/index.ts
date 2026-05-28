@@ -98,6 +98,12 @@ export const chatApi = {
   markRead(conversationId: number) {
     return http.post('/chat/mark-read', { conversation_id: conversationId })
   },
+  recallMessage(messageId: number) {
+    return http.post('/chat/recall', { message_id: messageId })
+  },
+  deleteMessage(messageId: number) {
+    return http.post('/chat/delete-message', { message_id: messageId })
+  },
 }
 
 export const uploadApi = {

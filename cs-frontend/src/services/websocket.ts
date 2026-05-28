@@ -2,6 +2,7 @@ import type { WsNewMessageData, WsReadData } from '../types'
 
 type MessageHandler = (data: WsNewMessageData) => void
 type ReadHandler = (data: WsReadData) => void
+type RecallHandler = (data: any) => void
 
 // const WS_URL = 'ws://localhost:8788'
 const WS_URL = `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`
@@ -13,6 +14,7 @@ class WebSocketService {
   private pingTimer: ReturnType<typeof setInterval> | null = null
   private messageHandlers: MessageHandler[] = []
   private readHandlers: ReadHandler[] = []
+  private recallHandlers: RecallHandler[] = []
   private statusHandlers: ((connected: boolean) => void)[] = []
   private onAuthSuccess: (() => void) | null = null
   private kickedHandlers: (() => void)[] = []
@@ -82,6 +84,11 @@ class WebSocketService {
           handler(msg.data as WsReadData)
         }
         break
+      case 'message.recalled':
+        for (const handler of this.recallHandlers) {
+          handler(msg.data)
+        }
+        break
       case 'kicked':
         this.cleanup()
         for (const handler of this.kickedHandlers) {
@@ -122,6 +129,14 @@ class WebSocketService {
     return () => {
       const idx = this.readHandlers.indexOf(handler)
       if (idx > -1) this.readHandlers.splice(idx, 1)
+    }
+  }
+
+  onRecall(handler: RecallHandler): () => void {
+    this.recallHandlers.push(handler)
+    return () => {
+      const idx = this.recallHandlers.indexOf(handler)
+      if (idx > -1) this.recallHandlers.splice(idx, 1)
     }
   }
 
@@ -181,6 +196,7 @@ class WebSocketService {
     this.cleanup()
     this.messageHandlers = []
     this.readHandlers = []
+    this.recallHandlers = []
     this.statusHandlers = []
     this.kickedHandlers = []
   }

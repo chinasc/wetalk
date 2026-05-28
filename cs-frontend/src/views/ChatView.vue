@@ -40,7 +40,10 @@
         />
 
         <!-- Bubble -->
-        <div class="msg-bubble" @click="onBubbleClick(msg)">
+        <div class="msg-bubble" @click="onBubbleClick(msg)" @longpress="onLongPress(msg)">
+          <!-- System message (recalled) -->
+          <span v-if="msg.type === 'system'" class="msg-system">{{ msg.content }}</span>
+
           <!-- Text message -->
           <span v-if="msg.type === 'text'" class="msg-text">{{ msg.content }}</span>
 
@@ -195,6 +198,9 @@
 
     <!-- Image preview -->
     <van-image-preview v-model:show="previewVisible" :images="previewImages" :closeable="true" @close="previewVisible = false" />
+
+    <!-- Message action sheet -->
+    <van-action-sheet v-model:show="actionVisible" :actions="actionItems" @select="onActionSelect" cancel-text="取消" />
   </div>
 </template>
 
@@ -221,6 +227,11 @@ const messageListRef = ref<HTMLElement | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const previewVisible = ref(false)
 const previewImages = ref<string[]>([])
+
+// Message action sheet
+const actionVisible = ref(false)
+const actionItems = ref<{ name: string; value: string; color?: string }[]>([])
+const activeMsg = ref<any>(null)
 
 // Album sheet
 const showAlbumSheet = ref(false)
@@ -397,6 +408,27 @@ async function onSelectQuickReply(item: QuickReply): Promise<void> {
     scrollToBottom(true)
   } catch {
     showToast('发送失败')
+  }
+}
+
+async function onLongPress(msg: any): Promise<void> {
+  if (msg.type === 'system') return
+  activeMsg.value = msg
+  const myId = authStore.user?.id
+  const isSelfMsg = msg.sender_id === myId
+  actionItems.value = isSelfMsg
+    ? [{ name: '撤回', value: 'recall' }, { name: '删除', value: 'delete', color: '#ee0a24' }]
+    : [{ name: '删除', value: 'delete', color: '#ee0a24' }]
+  actionVisible.value = true
+}
+
+async function onActionSelect(item: any): Promise<void> {
+  actionVisible.value = false
+  if (!activeMsg.value) return
+  if (item.value === 'recall') {
+    try { await chatStore.recallMessage(activeMsg.value.id) } catch { showToast('撤回失败') }
+  } else if (item.value === 'delete') {
+    try { await chatStore.deleteMessage(activeMsg.value.id) } catch { showToast('删除失败') }
   }
 }
 
@@ -601,6 +633,12 @@ onUnmounted(() => {
   font-size: 15px;
   line-height: 1.5;
   white-space: pre-wrap;
+}
+
+.msg-system {
+  font-size: 13px;
+  color: #999;
+  font-style: italic;
 }
 
 /* Image message */

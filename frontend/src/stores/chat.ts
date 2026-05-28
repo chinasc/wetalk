@@ -53,9 +53,19 @@ export const useChatStore = defineStore('chat', () => {
       if (conv) {
         conv.last_message = msg.type === 'text' ? msg.content : msg.type === 'album' ? '[相册]' : '[图片]'
         conv.last_message_time = msg.created_at
+        conv.updated_at = msg.created_at
         if (msg.conversation_id !== currentConversationId.value) {
           conv.unread_count = (conv.unread_count || 0) + 1
         }
+      }
+    })
+
+    wsService.on('message.recalled', (data) => {
+      const recalled = data as any
+      const idx = currentMessages.value.findIndex((m) => m.id === recalled.id)
+      if (idx !== -1) {
+        currentMessages.value[idx] = { ...currentMessages.value[idx], type: 'system', content: '消息已撤回' }
+        currentMessages.value = [...currentMessages.value]
       }
     })
 
@@ -121,6 +131,20 @@ export const useChatStore = defineStore('chat', () => {
     currentMessages.value = []
   }
 
+  async function recallMessage(msgId: number) {
+    await chatApi.recallMessage(msgId)
+    const idx = currentMessages.value.findIndex((m) => m.id === msgId)
+    if (idx !== -1) {
+      currentMessages.value[idx] = { ...currentMessages.value[idx], type: 'system', content: '消息已撤回' }
+      currentMessages.value = [...currentMessages.value]
+    }
+  }
+
+  async function deleteMessage(msgId: number) {
+    await chatApi.deleteMessage(msgId)
+    currentMessages.value = currentMessages.value.filter((m) => m.id !== msgId)
+  }
+
   return {
     conversations,
     currentMessages,
@@ -134,5 +158,7 @@ export const useChatStore = defineStore('chat', () => {
     fetchMessages,
     sendMessage,
     clearCurrentChat,
+    recallMessage,
+    deleteMessage,
   }
 })

@@ -4,17 +4,24 @@ import { useRoute, useRouter } from 'vue-router'
 import { showToast, showLoadingToast, closeToast, showImagePreview } from 'vant'
 import type { ChatMessage } from '../types'
 import { useChatStore } from '../stores/chat'
+import { useAuthStore } from '../stores/auth'
 import { uploadApi } from '../api'
 
 const route = useRoute()
 const router = useRouter()
 const chatStore = useChatStore()
+const authStore = useAuthStore()
 
 const conversationId = Number(route.params.id)
 const messageInput = ref('')
 const messagesContainer = ref<HTMLElement | null>(null)
 const sending = ref(false)
 const loadingMore = ref(false)
+
+// Message action sheet
+const actionVisible = ref(false)
+const actionItems = ref<{ name: string; value: string; color?: string }[]>([])
+const activeMsg = ref<ChatMessage | null>(null)
 
 const messages = computed(() => chatStore.currentMessages)
 const conversation = computed(() =>
@@ -159,6 +166,26 @@ function isSelf(msg: ChatMessage) {
   return msg.sender_type === 'user'
 }
 
+async function onLongPress(msg: ChatMessage) {
+  if (msg.type === 'system') return
+  activeMsg.value = msg
+  const isSelfMsg = msg.sender_id === authStore.user?.id
+  actionItems.value = isSelfMsg
+    ? [{ name: '撤回', value: 'recall' }, { name: '删除', value: 'delete', color: '#ee0a24' }]
+    : [{ name: '删除', value: 'delete', color: '#ee0a24' }]
+  actionVisible.value = true
+}
+
+async function onActionSelect(item: any) {
+  actionVisible.value = false
+  if (!activeMsg.value) return
+  if (item.value === 'recall') {
+    try { await chatStore.recallMessage(activeMsg.value.id) } catch { showToast('撤回失败') }
+  } else if (item.value === 'delete') {
+    try { await chatStore.deleteMessage(activeMsg.value.id) } catch { showToast('删除失败') }
+  }
+}
+
 function goBack() {
   router.back()
 }
@@ -212,12 +239,16 @@ function goBack() {
         </van-image>
 
         <div class="msg-body">
+          <!-- System message (recalled) -->
+          <div v-if="msg.type === 'system'" class="msg-bubble msg-system">
+            {{ msg.content }}
+          </div>
           <!-- Text bubble -->
-          <div v-if="msg.type === 'text'" class="msg-bubble">
+          <div v-else-if="msg.type === 'text'" class="msg-bubble" @longpress="onLongPress(msg)">
             {{ msg.content }}
           </div>
           <!-- Image bubble -->
-          <div v-else-if="msg.type === 'image'" class="msg-image-wrap">
+          <div v-else-if="msg.type === 'image'" class="msg-image-wrap" @longpress="onLongPress(msg)">
             <van-image
               :src="msg.content"
               fit="cover"
@@ -234,7 +265,7 @@ function goBack() {
             </van-image>
           </div>
           <!-- Album bubble -->
-          <div v-else-if="msg.type === 'album'" class="msg-album-bubble" @click="openAlbum(msg)">
+          <div v-else-if="msg.type === 'album'" class="msg-album-bubble" @click="openAlbum(msg)" @longpress="onLongPress(msg)">
             <van-image
               :src="parseAlbumCover(msg.content)"
               fit="cover"
@@ -295,6 +326,9 @@ function goBack() {
         发送
       </van-button>
     </div>
+
+    <!-- Message action sheet -->
+    <van-action-sheet v-model:show="actionVisible" :actions="actionItems" @select="onActionSelect" cancel-text="取消" />
   </div>
 </template>
 
@@ -377,6 +411,14 @@ function goBack() {
   background: #95ec69;
   color: #000;
   border-top-right-radius: 4px;
+}
+
+.msg-system.msg-bubble {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #999 !important;
+  font-size: 13px;
+  font-style: italic;
+  text-align: center;
 }
 
 .msg-image-wrap {

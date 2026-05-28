@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { http, clearMessages as apiClearMessages, deleteConversation as apiDeleteConv } from '../api'
+import { http, clearMessages as apiClearMessages, deleteConversation as apiDeleteConv, recallMessage as apiRecall, deleteMessage as apiDeleteMsg } from '../api'
 import { wsService } from '../services/websocket'
 import { playNotification } from '../services/notification'
 
@@ -73,6 +73,14 @@ export const useChatStore = defineStore('chat', () => {
         }
       }
       loadConversations().catch(() => {})
+    })
+
+    wsService.onRecall((data: any) => {
+      const idx = currentMessages.value.findIndex((m) => m.id === data.id)
+      if (idx !== -1) {
+        currentMessages.value[idx] = { ...currentMessages.value[idx], type: 'system', content: '消息已撤回' }
+        currentMessages.value = [...currentMessages.value]
+      }
     })
   }
 
@@ -199,6 +207,20 @@ export const useChatStore = defineStore('chat', () => {
     conversations.value = conversations.value.filter((c) => c.id !== convId)
   }
 
+  async function recallMessage(msgId: number) {
+    await apiRecall(msgId)
+    const idx = currentMessages.value.findIndex((m) => m.id === msgId)
+    if (idx !== -1) {
+      currentMessages.value[idx] = { ...currentMessages.value[idx], type: 'system', content: '消息已撤回' }
+      currentMessages.value = [...currentMessages.value]
+    }
+  }
+
+  async function deleteMessage(msgId: number) {
+    await apiDeleteMsg(msgId)
+    currentMessages.value = currentMessages.value.filter((m) => m.id !== msgId)
+  }
+
   return {
     conversations,
     currentMessages,
@@ -219,5 +241,7 @@ export const useChatStore = defineStore('chat', () => {
     getDraft,
     clearMessages,
     deleteConversation,
+    recallMessage,
+    deleteMessage,
   }
 })

@@ -255,6 +255,62 @@ class ChatController
         return json(['code' => 0, 'msg' => '聊天记录已清除']);
     }
 
+    public function recallMessage(Request $request)
+    {
+        $messageId = (int)$request->post('message_id', 0);
+        $message = Message::find($messageId);
+        if (!$message) {
+            return json(['code' => 1, 'msg' => '消息不存在']);
+        }
+
+        $user = $request->user;
+        if ($message->sender_id !== $user->id) {
+            return json(['code' => 403, 'msg' => '只能撤回自己发送的消息']);
+        }
+
+        $message->type = 'system';
+        $message->content = '消息已撤回';
+        $message->save();
+
+        $conversation = Conversation::find($message->conversation_id);
+        if ($conversation) {
+            $targetId = ($user->id === $conversation->user_id)
+                ? $conversation->customer_service_id
+                : $conversation->user_id;
+            WsService::sendToUser($targetId, [
+                'event' => 'message.recalled',
+                'data' => [
+                    'id' => $message->id,
+                    'conversation_id' => $message->conversation_id,
+                    'type' => 'system',
+                    'content' => '消息已撤回',
+                ],
+            ]);
+        }
+
+        return json(['code' => 0, 'msg' => '已撤回']);
+    }
+
+    public function deleteMessage(Request $request)
+    {
+        $messageId = (int)$request->post('message_id', 0);
+        $message = Message::find($messageId);
+        if (!$message) {
+            return json(['code' => 1, 'msg' => '消息不存在']);
+        }
+
+        $user = $request->user;
+        $conversation = Conversation::find($message->conversation_id);
+        $isMember = $conversation && ($user->id === $conversation->user_id || $user->id === $conversation->customer_service_id);
+        if (!$isMember && $user->role !== 'admin') {
+            return json(['code' => 403, 'msg' => '无权限']);
+        }
+
+        $message->delete();
+
+        return json(['code' => 0, 'msg' => '已删除']);
+    }
+
     public function deleteConversation(Request $request, $conversationId)
     {
         $conversation = Conversation::find($conversationId);
