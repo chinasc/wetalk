@@ -129,6 +129,11 @@ export async function deleteMessage(messageId: number): Promise<void> {
   await http.post('/chat/delete-message', { message_id: messageId })
 }
 
+export async function togglePin(conversationId: number): Promise<{ cs_pinned: boolean }> {
+  const res = await http.post(`/chat/pin/${conversationId}`)
+  return unwrap(res)
+}
+
 // ============ Upload ============
 
 export async function uploadImage(file: File): Promise<{ url: string }> {

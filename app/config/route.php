@@ -26,6 +26,7 @@ Route::group('/api', function () {
     Route::post('/chat/mark-read', [app\controller\ChatController::class, 'markRead']);
     Route::post('/chat/recall', [app\controller\ChatController::class, 'recallMessage']);
     Route::post('/chat/delete-message', [app\controller\ChatController::class, 'deleteMessage']);
+    Route::post('/chat/pin/{conversationId}', [app\controller\ChatController::class, 'togglePin']);
     Route::delete('/chat/messages/{conversationId}', [app\controller\ChatController::class, 'clearMessages']);
     Route::delete('/chat/conversation/{conversationId}', [app\controller\ChatController::class, 'deleteConversation']);
 

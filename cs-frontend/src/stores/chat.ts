@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { http, clearMessages as apiClearMessages, deleteConversation as apiDeleteConv, recallMessage as apiRecall, deleteMessage as apiDeleteMsg } from '../api'
+import { http, clearMessages as apiClearMessages, deleteConversation as apiDeleteConv, recallMessage as apiRecall, deleteMessage as apiDeleteMsg, togglePin as apiTogglePin } from '../api'
 import { wsService } from '../services/websocket'
 import { playNotification } from '../services/notification'
 
@@ -23,6 +23,7 @@ export interface ConvItem {
   last_message_type: string
   last_message_time: string
   unread_count: number
+  cs_pinned?: boolean
 }
 
 export const useChatStore = defineStore('chat', () => {
@@ -93,18 +94,23 @@ export const useChatStore = defineStore('chat', () => {
       }
 
       // Move conversation to top locally
-      const idx = conversations.value.findIndex((c) => c.id === msg.conversation_id)
-      if (idx > 0) {
-        const [conv] = conversations.value.splice(idx, 1)
+      const convIdx = conversations.value.findIndex((c) => c.id === msg.conversation_id)
+      if (convIdx !== -1) {
+        const conv = conversations.value[convIdx]
         conv.last_message = msg.type === 'text' ? msg.content : msg.type === 'album' ? '[相册]' : '[图片]'
         conv.last_message_type = msg.type
         conv.last_message_time = msg.created_at
-        conversations.value = [conv, ...conversations.value]
-      } else if (idx === 0) {
-        const conv = conversations.value[0]
-        conv.last_message = msg.type === 'text' ? msg.content : msg.type === 'album' ? '[相册]' : '[图片]'
-        conv.last_message_type = msg.type
-        conv.last_message_time = msg.created_at
+        if (convIdx !== 0) {
+          conversations.value.splice(convIdx, 1)
+          if (conv.cs_pinned) {
+            conversations.value = [conv, ...conversations.value]
+          } else {
+            const lastPinned = conversations.value.findLastIndex((c) => c.cs_pinned)
+            const insertAt = lastPinned === -1 ? 0 : lastPinned + 1
+            conversations.value.splice(insertAt, 0, conv)
+            conversations.value = [...conversations.value]
+          }
+        }
       }
     })
 
@@ -151,7 +157,15 @@ export const useChatStore = defineStore('chat', () => {
     conv.last_message = lastMsg
     conv.last_message_type = lastMsgType
     conv.last_message_time = lastMsgTime
-    conversations.value = [conv, ...conversations.value]
+    // Insert after last pinned, before first unpinned
+    if (conv.cs_pinned) {
+      conversations.value = [conv, ...conversations.value]
+    } else {
+      const lastPinnedIdx = conversations.value.findLastIndex((c) => c.cs_pinned)
+      const insertAt = lastPinnedIdx === -1 ? 0 : lastPinnedIdx + 1
+      conversations.value.splice(insertAt, 0, conv)
+      conversations.value = [...conversations.value]
+    }
   }
 
   async function sendTextMessage(convId: number, content: string) {
@@ -265,6 +279,18 @@ export const useChatStore = defineStore('chat', () => {
     currentMessages.value = currentMessages.value.filter((m) => m.id !== msgId)
   }
 
+  async function togglePin(convId: number) {
+    const res = await apiTogglePin(convId)
+    const conv = conversations.value.find((c) => c.id === convId)
+    if (conv) {
+      conv.cs_pinned = res.cs_pinned
+      // Re-sort: pinned first
+      const pinned = conversations.value.filter((c) => c.cs_pinned)
+      const unpinned = conversations.value.filter((c) => !c.cs_pinned)
+      conversations.value = [...pinned, ...unpinned]
+    }
+  }
+
   return {
     conversations,
     currentMessages,
@@ -287,5 +313,6 @@ export const useChatStore = defineStore('chat', () => {
     deleteConversation,
     recallMessage,
     deleteMessage,
+    togglePin,
   }
 })

@@ -27,7 +27,7 @@ class ChatController
         if ($isCs) {
             $query = Conversation::where('customer_service_id', $user->id)
                 ->with(['user', 'latestMessage'])
-                ->orderBy('updated_at', 'desc');
+                ->orderByRaw('cs_pinned DESC, updated_at DESC');
         } else {
             $query = Conversation::where('user_id', $user->id)
                 ->with(['customerService', 'latestMessage'])
@@ -70,6 +70,7 @@ class ChatController
                 'last_message_time' => $lastMsg ? $lastMsg->created_at : $conv->created_at,
                 'unread_count' => $unreadCount,
                 'status' => $conv->status,
+                'cs_pinned' => (bool)$conv->cs_pinned,
                 'created_at' => $conv->created_at,
                 'updated_at' => $conv->updated_at,
             ];
@@ -328,6 +329,28 @@ class ChatController
         $conversation->delete();
 
         return json(['code' => 0, 'msg' => '会话已删除']);
+    }
+
+    public function togglePin(Request $request, $conversationId)
+    {
+        $conversation = Conversation::find($conversationId);
+        if (!$conversation) {
+            return json(['code' => 1, 'msg' => '会话不存在']);
+        }
+
+        $user = $request->user;
+        if ($user->id !== $conversation->customer_service_id && $user->role !== 'admin') {
+            return json(['code' => 403, 'msg' => '无权限']);
+        }
+
+        $conversation->cs_pinned = $conversation->cs_pinned ? 0 : 1;
+        $conversation->save();
+
+        return json([
+            'code' => 0,
+            'msg' => $conversation->cs_pinned ? '已置顶' : '已取消置顶',
+            'data' => ['cs_pinned' => (bool)$conversation->cs_pinned],
+        ]);
     }
 
     public function adminConversations(Request $request)

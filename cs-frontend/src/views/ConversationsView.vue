@@ -45,7 +45,10 @@
               </van-badge>
               <div class="conv-info">
                 <div class="conv-top-row">
-                  <span class="conv-nickname">{{ conv.user_nickname }}</span>
+                  <span class="conv-nickname">
+                    <van-icon v-if="conv.cs_pinned" name="down" size="12" color="#ee0a24" class="pin-icon" />
+                    {{ conv.user_nickname }}
+                  </span>
                   <span class="conv-time">{{ formatTime(conv.last_message_time) }}</span>
                 </div>
                 <div class="conv-last-msg" :class="{ 'unread-msg': conv.unread_count > 0 }">
@@ -58,6 +61,7 @@
                 </div>
               </div>
               <div class="conv-actions">
+                <van-button size="mini" :type="conv.cs_pinned ? 'primary' : 'default'" plain @click.stop="handlePin(conv)">{{ conv.cs_pinned ? '取消置顶' : '置顶' }}</van-button>
                 <van-button size="mini" type="warning" plain @click.stop="handleClear(conv)">清除</van-button>
                 <van-button size="mini" type="danger" plain @click.stop="handleDelete(conv)">删除</van-button>
               </div>
@@ -133,6 +137,14 @@ function formatLastMessage(type: string, content: string): string {
 
 function openChat(conv: ConvItem): void {
   router.push(`/chat/${conv.id}`)
+}
+
+async function handlePin(conv: ConvItem): Promise<void> {
+  try {
+    await chatStore.togglePin(conv.id)
+  } catch {
+    showToast('操作失败')
+  }
 }
 
 async function handleClear(conv: ConvItem): Promise<void> {
@@ -308,8 +320,20 @@ onMounted(() => {
 .conv-actions {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   flex-shrink: 0;
   margin-left: 8px;
+}
+
+.conv-actions :deep(.van-button) {
+  font-size: 11px;
+  padding: 0 6px;
+  height: 24px;
+}
+
+.pin-icon {
+  transform: rotate(180deg);
+  vertical-align: middle;
+  margin-right: 2px;
 }
 </style>

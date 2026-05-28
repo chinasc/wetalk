@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS `conversations` (
   `status` enum('active','closed') NOT NULL DEFAULT 'active' COMMENT '会话状态',
   `user_last_read_id` bigint unsigned NOT NULL DEFAULT 0 COMMENT '用户最后已读消息ID',
   `cs_last_read_id` bigint unsigned NOT NULL DEFAULT 0 COMMENT '客服最后已读消息ID',
+  `cs_pinned` tinyint NOT NULL DEFAULT 0 COMMENT '客服是否置顶：0否 1是',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
