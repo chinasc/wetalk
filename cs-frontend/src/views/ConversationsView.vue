@@ -23,46 +23,47 @@
       />
 
       <van-cell-group v-else inset class="conversation-list">
-        <van-swipe-cell v-for="conv in conversations" :key="conv.id">
-          <van-cell
-            class="conversation-cell"
-            :class="{ 'has-unread': conv.unread_count > 0 }"
-            clickable
-            @click="openChat(conv)"
-          >
-            <template #title>
-              <div class="conv-content">
-                <van-badge :content="conv.unread_count > 0 ? conv.unread_count : undefined" :max="99">
-                  <van-image
-                    round
-                    width="48"
-                    height="48"
-                    :src="conv.user_avatar || defaultAvatar"
-                    fit="cover"
-                    class="conv-avatar"
-                  />
-                </van-badge>
-                <div class="conv-info">
-                  <div class="conv-top-row">
-                    <span class="conv-nickname">{{ conv.user_nickname }}</span>
-                    <span class="conv-time">{{ formatTime(conv.last_message_time) }}</span>
-                  </div>
-                  <div class="conv-last-msg" :class="{ 'unread-msg': conv.unread_count > 0 }">
-                    <template v-if="chatStore.getDraft(conv.id)">
-                      <span class="draft-tag">[草稿]</span>{{ chatStore.getDraft(conv.id) }}
-                    </template>
-                    <template v-else>
-                      {{ formatLastMessage(conv.last_message_type, conv.last_message) }}
-                    </template>
-                  </div>
+        <van-cell
+          v-for="conv in conversations"
+          :key="conv.id"
+          class="conversation-cell"
+          :class="{ 'has-unread': conv.unread_count > 0 }"
+          clickable
+          @click="openChat(conv)"
+        >
+          <template #title>
+            <div class="conv-content">
+              <van-badge :content="conv.unread_count > 0 ? conv.unread_count : undefined" :max="99">
+                <van-image
+                  round
+                  width="48"
+                  height="48"
+                  :src="conv.user_avatar || defaultAvatar"
+                  fit="cover"
+                  class="conv-avatar"
+                />
+              </van-badge>
+              <div class="conv-info">
+                <div class="conv-top-row">
+                  <span class="conv-nickname">{{ conv.user_nickname }}</span>
+                  <span class="conv-time">{{ formatTime(conv.last_message_time) }}</span>
+                </div>
+                <div class="conv-last-msg" :class="{ 'unread-msg': conv.unread_count > 0 }">
+                  <template v-if="chatStore.getDraft(conv.id)">
+                    <span class="draft-tag">[草稿]</span>{{ chatStore.getDraft(conv.id) }}
+                  </template>
+                  <template v-else>
+                    {{ formatLastMessage(conv.last_message_type, conv.last_message) }}
+                  </template>
                 </div>
               </div>
-            </template>
-          </van-cell>
-          <template #right>
-            <van-button square type="danger" text="清除记录" class="swipe-btn" @click="handleClear(conv)" />
+              <div class="conv-actions">
+                <van-button size="mini" type="warning" plain @click.stop="handleClear(conv)">清除</van-button>
+                <van-button size="mini" type="danger" plain @click.stop="handleDelete(conv)">删除</van-button>
+              </div>
+            </div>
           </template>
-        </van-swipe-cell>
+        </van-cell>
       </van-cell-group>
     </van-pull-refresh>
 
@@ -143,6 +144,20 @@ async function handleClear(conv: ConvItem): Promise<void> {
   try {
     await chatStore.clearMessages(conv.id)
     showToast('记录已清除')
+  } catch {
+    showToast('操作失败')
+  }
+}
+
+async function handleDelete(conv: ConvItem): Promise<void> {
+  try {
+    await showConfirmDialog({ title: '删除会话', message: `确定删除与 ${conv.user_nickname} 的会话吗？此操作不可恢复。` })
+  } catch {
+    return
+  }
+  try {
+    await chatStore.deleteConversation(conv.id)
+    showToast('会话已删除')
   } catch {
     showToast('操作失败')
   }
@@ -284,13 +299,17 @@ onMounted(() => {
   vertical-align: middle;
 }
 
-.swipe-btn {
-  height: 100%;
-}
-
 .draft-tag {
   color: #ee0a24;
   font-weight: 500;
   margin-right: 2px;
+}
+
+.conv-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: 8px;
 }
 </style>

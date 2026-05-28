@@ -25,6 +25,7 @@ Route::group('/api', function () {
     Route::post('/chat/send', [app\controller\ChatController::class, 'sendMessage']);
     Route::post('/chat/mark-read', [app\controller\ChatController::class, 'markRead']);
     Route::delete('/chat/messages/{conversationId}', [app\controller\ChatController::class, 'clearMessages']);
+    Route::delete('/chat/conversation/{conversationId}', [app\controller\ChatController::class, 'deleteConversation']);
 
     // 文件上传
     Route::post('/upload/image', [app\controller\UploadController::class, 'image']);

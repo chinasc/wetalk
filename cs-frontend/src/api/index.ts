@@ -117,6 +117,10 @@ export async function clearMessages(conversationId: number): Promise<void> {
   await http.delete(`/chat/messages/${conversationId}`)
 }
 
+export async function deleteConversation(conversationId: number): Promise<void> {
+  await http.delete(`/chat/conversation/${conversationId}`)
+}
+
 // ============ Upload ============
 
 export async function uploadImage(file: File): Promise<{ url: string }> {
