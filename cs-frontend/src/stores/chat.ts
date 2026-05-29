@@ -143,7 +143,12 @@ export const useChatStore = defineStore('chat', () => {
       if (beforeId) {
         currentMessages.value = [...arr, ...currentMessages.value]
       } else {
-        currentMessages.value = arr
+        // Merge: only add messages not already in local list
+        const existingIds = new Set(currentMessages.value.map((m) => m.id))
+        const newMsgs = arr.filter((m) => !existingIds.has(m.id))
+        if (newMsgs.length > 0) {
+          currentMessages.value = [...currentMessages.value, ...newMsgs].sort((a, b) => a.id - b.id)
+        }
       }
     } finally {
       loading.value = false

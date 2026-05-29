@@ -53,9 +53,6 @@ export const useAuthStore = defineStore('auth', () => {
   function onWsAuth() {
     const chatStore = useChatStore()
     chatStore.loadConversations().catch(() => {})
-    if (chatStore.currentConversationId) {
-      chatStore.loadMessages(chatStore.currentConversationId).catch(() => {})
-    }
   }
 
   const isLoggedIn = () => !!token.value && !!user.value
