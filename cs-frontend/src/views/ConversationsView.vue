@@ -259,6 +259,7 @@ onMounted(() => {
   flex: 1;
   margin-left: 12px;
   min-width: 0;
+  max-width: calc(100% - 130px);
   overflow: hidden;
 }
 
@@ -322,6 +323,7 @@ onMounted(() => {
   flex-direction: column;
   gap: 4px;
   flex-shrink: 0;
+  flex-basis: auto;
   margin-left: 8px;
 }
 
