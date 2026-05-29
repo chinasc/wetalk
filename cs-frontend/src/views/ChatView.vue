@@ -717,10 +717,12 @@ onUnmounted(() => {
 
 .chat-input :deep(.van-field__control) {
   background: #f5f5f5;
-  border-radius: 18px;
+  border-radius: 12px;
   padding: 6px 14px;
   font-size: 15px;
   min-height: 24px;
+  max-height: 100px;
+  line-height: 1.4;
 }
 
 .chat-input :deep(.van-field__body) {
