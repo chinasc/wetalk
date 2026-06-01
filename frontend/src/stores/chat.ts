@@ -62,6 +62,7 @@ export const useChatStore = defineStore('chat', () => {
 
     wsService.on('message.recalled', (data) => {
       const recalled = data as any
+      if (recalled.conversation_id && recalled.conversation_id !== currentConversationId.value) return
       const idx = currentMessages.value.findIndex((m) => m.id === recalled.id)
       if (idx !== -1) {
         currentMessages.value[idx] = { ...currentMessages.value[idx], type: 'system', content: '消息已撤回' }
@@ -114,7 +115,7 @@ export const useChatStore = defineStore('chat', () => {
   async function sendMessage(conversationId: number, type: string, content: string) {
     const res = await chatApi.send(conversationId, type, content)
     const msg = res.data || res
-    if (msg && !currentMessages.value.some((m) => m.id === msg.id)) {
+    if (msg && currentConversationId.value === conversationId && !currentMessages.value.some((m) => m.id === msg.id)) {
       currentMessages.value.push(msg)
     }
     const conv = conversations.value.find((c) => c.id === conversationId)

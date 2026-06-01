@@ -527,6 +527,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   chatStore.saveDraft(conversationId.value, inputText.value)
+  chatStore.clearCurrentChat()
 })
 </script>
 

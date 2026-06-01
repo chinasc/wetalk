@@ -115,6 +115,7 @@ export const useChatStore = defineStore('chat', () => {
     })
 
     wsService.onRecall((data: any) => {
+      if (data.conversation_id && data.conversation_id !== currentConversationId.value) return
       const idx = currentMessages.value.findIndex((m) => m.id === data.id)
       if (idx !== -1) {
         currentMessages.value[idx] = { ...currentMessages.value[idx], type: 'system', content: '消息已撤回' }
@@ -143,12 +144,12 @@ export const useChatStore = defineStore('chat', () => {
       if (beforeId) {
         currentMessages.value = [...arr, ...currentMessages.value]
       } else {
-        // Merge: only add messages not already in local list
-        const existingIds = new Set(currentMessages.value.map((m) => m.id))
-        const newMsgs = arr.filter((m) => !existingIds.has(m.id))
-        if (newMsgs.length > 0) {
-          currentMessages.value = [...currentMessages.value, ...newMsgs].sort((a, b) => a.id - b.id)
-        }
+        // Replace with server data, then merge any real-time WS messages for this conversation
+        const existingIds = new Set(arr.map((m) => m.id))
+        const wsMsgs = currentMessages.value.filter(
+          (m) => m.conversation_id === convId && !existingIds.has(m.id),
+        )
+        currentMessages.value = [...arr, ...wsMsgs].sort((a, b) => a.id - b.id)
       }
     } finally {
       loading.value = false
@@ -181,7 +182,7 @@ export const useChatStore = defineStore('chat', () => {
         type: 'text',
         content,
       }))
-      if (msg && !currentMessages.value.some((m) => m.id === msg.id)) {
+      if (msg && currentConversationId.value === convId && !currentMessages.value.some((m) => m.id === msg.id)) {
         currentMessages.value = [...currentMessages.value, msg]
       }
       moveToTop(convId, content, 'text', msg.created_at)
@@ -200,7 +201,7 @@ export const useChatStore = defineStore('chat', () => {
       const msg = extractData<ChatMessage>(await http.post('/chat/send', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       }))
-      if (msg && !currentMessages.value.some((m) => m.id === msg.id)) {
+      if (msg && currentConversationId.value === convId && !currentMessages.value.some((m) => m.id === msg.id)) {
         currentMessages.value = [...currentMessages.value, msg]
       }
       moveToTop(convId, '[图片]', 'image', msg.created_at)
@@ -218,7 +219,7 @@ export const useChatStore = defineStore('chat', () => {
         type: 'album',
         content,
       }))
-      if (msg && !currentMessages.value.some((m) => m.id === msg.id)) {
+      if (msg && currentConversationId.value === convId && !currentMessages.value.some((m) => m.id === msg.id)) {
         currentMessages.value = [...currentMessages.value, msg]
       }
       moveToTop(convId, `[相册] ${albumTitle}`, 'album', msg.created_at)
