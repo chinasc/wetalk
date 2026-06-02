@@ -16,8 +16,10 @@ class UserController
                   ->orWhere('nickname', 'like', "%{$keyword}%");
             });
         }
+        
         $users = $query->orderBy('id', 'desc')->paginate(15);
         $items = $users->items();
+
         foreach ($items as $user) {
             $user->online = $user->isOnline();
         }
