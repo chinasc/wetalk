@@ -17,6 +17,10 @@ class UserController
             });
         }
         $users = $query->orderBy('id', 'desc')->paginate(15);
+        $items = $users->items();
+        foreach ($items as $user) {
+            $user->online = $user->isOnline();
+        }
 
         return json(['code' => 0, 'data' => $users]);
     }

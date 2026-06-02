@@ -17,9 +17,13 @@
           <div class="user-row">
             <div class="user-avatar-wrap">
               <van-image :src="user.avatar || defaultAvatar" round width="44" height="44" fit="cover" />
+              <span class="online-dot" :class="user.online ? 'online' : 'offline'" />
             </div>
             <div class="user-info">
-              <div class="user-name">{{ user.nickname || user.username }}</div>
+              <div class="user-name">
+                  {{ user.nickname || user.username }}
+                  <span class="online-tag" :class="user.online ? 'online' : 'offline'">{{ user.online ? '在线' : '离线' }}</span>
+                </div>
               <div class="user-meta">
                 <span>{{ user.username }}</span>
                 <span v-if="user.verify_code" class="verify-code" @click="copyCode(user.verify_code)">验证码: {{ user.verify_code }}</span>
@@ -277,8 +281,27 @@ onMounted(() => {
 }
 
 .user-avatar-wrap {
+  position: relative;
   flex-shrink: 0;
-  overflow: hidden;
+  overflow: visible;
+}
+
+.online-dot {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+
+.online-dot.online {
+  background: #07c160;
+}
+
+.online-dot.offline {
+  background: #c8c9cc;
 }
 
 .user-info {
@@ -291,6 +314,26 @@ onMounted(() => {
   font-size: 15px;
   font-weight: 500;
   color: #333;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.online-tag {
+  font-size: 11px;
+  font-weight: 400;
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+
+.online-tag.online {
+  color: #07c160;
+  background: rgba(7, 193, 96, 0.1);
+}
+
+.online-tag.offline {
+  color: #999;
+  background: #f5f5f5;
 }
 
 .user-meta {
