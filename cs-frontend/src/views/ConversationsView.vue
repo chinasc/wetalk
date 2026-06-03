@@ -34,14 +34,17 @@
           <template #title>
             <div class="conv-content">
               <van-badge :content="conv.unread_count > 0 ? conv.unread_count : undefined" :max="99">
-                <van-image
-                  round
-                  width="48"
-                  height="48"
-                  :src="conv.user_avatar || defaultAvatar"
-                  fit="cover"
-                  class="conv-avatar"
-                />
+                <div class="conv-avatar-wrap">
+                  <van-image
+                    round
+                    width="48"
+                    height="48"
+                    :src="conv.user_avatar || defaultAvatar"
+                    fit="cover"
+                    class="conv-avatar"
+                  />
+                  <span class="online-dot" :class="conv.user_online ? 'online' : 'offline'" />
+                </div>
               </van-badge>
               <div class="conv-info">
                 <div class="conv-top-row">
@@ -250,9 +253,32 @@ onMounted(() => {
   width: 100%;
 }
 
-.conv-avatar {
+.conv-avatar-wrap {
+  position: relative;
   flex-shrink: 0;
+}
+
+.conv-avatar {
+  display: block;
   overflow: hidden;
+}
+
+.online-dot {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+
+.online-dot.online {
+  background: #07c160;
+}
+
+.online-dot.offline {
+  background: #c8c9cc;
 }
 
 .conv-info {

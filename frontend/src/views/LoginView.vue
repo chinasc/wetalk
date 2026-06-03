@@ -79,8 +79,8 @@ async function handleLogin() {
       <van-cell-group inset>
         <van-field
           v-model="username"
-          label="用户名"
-          placeholder="请输入用户名"
+          label="账号"
+          placeholder="请输入账号"
           clearable
           @blur="checkUsername"
         />
@@ -109,7 +109,7 @@ async function handleLogin() {
       </div>
 
       <p class="login-tip">
-        {{ needVerifyCode ? '请输入管理员提供的密码' : '输入用户名即可登录' }}
+        {{ needVerifyCode ? '请输入管理员提供的密码' : '输入账号即可登录' }}
       </p>
     </div>
   </div>

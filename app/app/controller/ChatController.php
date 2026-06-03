@@ -62,6 +62,7 @@ class ChatController
                 'user_id' => $conv->user_id,
                 'user_nickname' => $conv->user ? ($conv->user->nickname ?: $conv->user->username) : '',
                 'user_avatar' => $conv->user ? $conv->user->avatar : '',
+                'user_online' => $conv->user ? $conv->user->isOnline() : false,
                 'customer_service_id' => $conv->customer_service_id,
                 'customer_service_name' => $conv->customerService ? ($conv->customerService->nickname ?: $conv->customerService->username) : '',
                 'customer_service_avatar' => $conv->customerService ? $conv->customerService->avatar : '',
