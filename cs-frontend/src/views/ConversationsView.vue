@@ -63,11 +63,7 @@
                   </template>
                 </div>
               </div>
-              <div class="conv-actions">
-                <van-button size="mini" :type="conv.cs_pinned ? 'primary' : 'default'" plain @click.stop="handlePin(conv)">{{ conv.cs_pinned ? '取消置顶' : '置顶' }}</van-button>
-                <van-button size="mini" type="warning" plain @click.stop="handleClear(conv)">清除</van-button>
-                <van-button size="mini" type="danger" plain @click.stop="handleDelete(conv)">删除</van-button>
-              </div>
+              <van-icon name="ellipsis" size="20" color="#999" class="conv-more" @click.stop="showConvActions(conv)" />
             </div>
           </template>
         </van-cell>
@@ -75,6 +71,13 @@
     </van-pull-refresh>
 
     <van-action-sheet v-model:show="showMenu" :actions="menuActions" @select="onMenuSelect" cancel-text="取消" />
+
+    <van-action-sheet
+      v-model:show="showConvMenu"
+      :actions="convActions"
+      @select="onConvAction"
+      cancel-text="取消"
+    />
   </div>
 </template>
 
@@ -91,6 +94,8 @@ const chatStore = useChatStore()
 const authStore = useAuthStore()
 const refreshing = ref(false)
 const showMenu = ref(false)
+const showConvMenu = ref(false)
+const activeConv = ref<ConvItem | null>(null)
 
 const defaultAvatar = 'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg'
 
@@ -140,6 +145,34 @@ function formatLastMessage(type: string, content: string): string {
 
 function openChat(conv: ConvItem): void {
   router.push(`/chat/${conv.id}`)
+}
+
+const convActions = computed(() => {
+  if (!activeConv.value) return []
+  return [
+    { name: activeConv.value.cs_pinned ? '取消置顶' : '置顶', value: 'pin' },
+    { name: '清除聊天记录', value: 'clear', color: '#ff976a' },
+    { name: '删除会话', value: 'delete', color: '#ee0a24' },
+  ]
+})
+
+function showConvActions(conv: ConvItem): void {
+  activeConv.value = conv
+  showConvMenu.value = true
+}
+
+async function onConvAction(action: any): Promise<void> {
+  const conv = activeConv.value
+  if (!conv) return
+  showConvMenu.value = false
+  if (action.value === 'pin') {
+    await handlePin(conv)
+  } else if (action.value === 'clear') {
+    await handleClear(conv)
+  } else if (action.value === 'delete') {
+    await handleDelete(conv)
+  }
+  activeConv.value = null
 }
 
 async function handlePin(conv: ConvItem): Promise<void> {
@@ -285,7 +318,6 @@ onMounted(() => {
   flex: 1;
   margin-left: 12px;
   min-width: 0;
-  max-width: calc(100% - 130px);
   overflow: hidden;
 }
 
@@ -344,19 +376,10 @@ onMounted(() => {
   margin-right: 2px;
 }
 
-.conv-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.conv-more {
   flex-shrink: 0;
-  flex-basis: auto;
   margin-left: 8px;
-}
-
-.conv-actions :deep(.van-button) {
-  font-size: 11px;
-  padding: 0 6px;
-  height: 24px;
+  padding: 4px;
 }
 
 .pin-icon {
