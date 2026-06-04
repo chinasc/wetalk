@@ -85,7 +85,6 @@ async function handleLogin() {
           @blur="checkUsername"
         />
         <van-field
-          v-if="needVerifyCode"
           v-model="verifyCode"
           label="密码"
           placeholder="请输入密码"
