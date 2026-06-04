@@ -110,10 +110,10 @@ class ChatController
         return json(['code' => 0, 'data' => $conversation->load(['customerService'])]);
     }
 
-    public function csCreateConversation(Request $request)
+    public function csCreateConversation(Request $request, $id)
     {
         $cs = $request->user;
-        $userId = (int)$request->post('user_id', 0);
+        $userId = (int)$id;
 
         if (!$userId) {
             return json(['code' => 1, 'msg' => '请选择用户']);
