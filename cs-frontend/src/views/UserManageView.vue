@@ -33,7 +33,8 @@
         </template>
         <template #value>
           <div class="cell-actions">
-            <van-button size="mini" plain type="primary" @click="showEditDialog(user)">编辑</van-button>
+            <van-button size="mini" plain type="primary" icon="chat-o" @click="onStartChat(user)">发消息</van-button>
+            <van-button size="mini" plain @click="showEditDialog(user)">编辑</van-button>
             <van-button size="mini" plain type="danger" @click="onDeleteUser(user)">删除</van-button>
           </div>
         </template>
@@ -91,9 +92,11 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast, showConfirmDialog } from 'vant'
-import { getCsUsers, createCsUser, resetUserPassword, updateCsUser, deleteCsUser } from '../api'
+import { getCsUsers, createCsUser, resetUserPassword, updateCsUser, deleteCsUser, csCreateConversation } from '../api'
+import { useChatStore } from '../stores/chat'
 
 const router = useRouter()
+const chatStore = useChatStore()
 const defaultAvatar = 'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg'
 
 const loading = ref(false)
@@ -225,6 +228,16 @@ function copyCode(code: string) {
   })
 }
 
+async function onStartChat(user: any) {
+  try {
+    const conv = await csCreateConversation(user.id)
+    await chatStore.loadConversations()
+    router.push(`/chat/${conv.id}`)
+  } catch (err: any) {
+    showToast(err.message || '发起失败')
+  }
+}
+
 onMounted(() => {
   fetchUsers()
 })
@@ -354,6 +367,14 @@ onMounted(() => {
   display: flex;
   gap: 4px;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.cell-actions :deep(.van-button) {
+  font-size: 11px;
+  padding: 0 6px;
+  height: 26px;
 }
 
 .load-more {

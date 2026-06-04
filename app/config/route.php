@@ -54,6 +54,7 @@ Route::group('/api', function () {
         Route::post('/{id}/reset-password', [app\controller\UserController::class, 'resetPassword']);
         Route::post('/{id}', [app\controller\UserController::class, 'update']);
         Route::delete('/{id}', [app\controller\UserController::class, 'destroy']);
+        Route::post('/{id}/chat', [app\controller\ChatController::class, 'csCreateConversation']);
     })->middleware([app\middleware\CsAuth::class]);
 
     // 相册管理（客服端）

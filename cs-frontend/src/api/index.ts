@@ -240,4 +240,9 @@ export async function deleteCsUser(id: number): Promise<void> {
   await http.delete(`/cs/users/${id}`)
 }
 
+export async function csCreateConversation(userId: number): Promise<any> {
+  const res = await http.post(`/cs/users/${userId}/chat`)
+  return unwrap(res)
+}
+
 export { http }

@@ -110,6 +110,38 @@ class ChatController
         return json(['code' => 0, 'data' => $conversation->load(['customerService'])]);
     }
 
+    public function csCreateConversation(Request $request)
+    {
+        $cs = $request->user;
+        $userId = (int)$request->post('user_id', 0);
+
+        if (!$userId) {
+            return json(['code' => 1, 'msg' => '请选择用户']);
+        }
+
+        $targetUser = \app\model\User::find($userId);
+        if (!$targetUser || $targetUser->role !== 'user') {
+            return json(['code' => 1, 'msg' => '用户不存在']);
+        }
+
+        $existing = Conversation::where('user_id', $userId)
+            ->where('customer_service_id', $cs->id)
+            ->where('status', 'active')
+            ->first();
+
+        if ($existing) {
+            return json(['code' => 0, 'data' => $existing]);
+        }
+
+        $conversation = Conversation::create([
+            'user_id' => $userId,
+            'customer_service_id' => $cs->id,
+            'status' => 'active',
+        ]);
+
+        return json(['code' => 0, 'data' => $conversation]);
+    }
+
     public function messages(Request $request, $conversationId)
     {
         $conversation = Conversation::find($conversationId);
