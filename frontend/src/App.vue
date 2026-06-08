@@ -14,8 +14,9 @@ wsService.on('kicked', () => {
 
 watch(() => authStore.isLoggedIn, (val) => {
   if (val) {
-    authStore.initWs()
+    // Register listeners BEFORE connecting to prevent missing auth.success
     chatStore.setupWsListeners()
+    authStore.initWs()
     chatStore.fetchConversations().catch(() => {})
     authStore.fetchUser().catch(() => {
       authStore.logout()

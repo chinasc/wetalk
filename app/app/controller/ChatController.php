@@ -200,7 +200,17 @@ class ChatController
 
         if ($type === 'image' && $request->file('file')) {
             $file = $request->file('file');
-            $filename = uniqid() . '.' . $file->getUploadExtension();
+            $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'];
+            $mime = $file->getUploadMimeType();
+            if (!in_array($mime, $allowedMimes)) {
+                return json(['code' => 1, 'msg' => '不支持的图片格式，请上传 JPG/PNG/GIF/WEBP']);
+            }
+            $ext = $file->getUploadExtension();
+            $safeExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
+            if (!in_array(strtolower($ext), $safeExts)) {
+                $ext = 'jpg';
+            }
+            $filename = uniqid() . '.' . $ext;
             $file->move(public_path() . '/upload/chat/' . $filename);
             $content = '/upload/chat/' . $filename;
         }

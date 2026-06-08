@@ -44,7 +44,7 @@ class WebSocketService {
       this.send('auth', { token: this.token })
       this.pingTimer = setInterval(() => {
         this.send('ping', {})
-      }, 2000)
+      }, 15000)
     }
 
     this.ws.onmessage = (event: MessageEvent) => {

@@ -52,8 +52,18 @@
             v-else-if="msg.type === 'image'"
             :src="msg.content"
             fit="cover"
+            width="160"
+            height="160"
+            radius="6"
             class="msg-image"
-          />
+          >
+            <template #loading>
+              <div class="msg-image-placeholder"><van-loading size="20" /></div>
+            </template>
+            <template #error>
+              <div class="msg-image-placeholder"><van-icon name="photo-o" size="24" color="#999" /></div>
+            </template>
+          </van-image>
 
           <!-- Album message -->
           <div v-else-if="msg.type === 'album'" class="msg-album">
@@ -87,7 +97,7 @@
     </div>
 
     <!-- Bottom toolbar -->
-    <div class="chat-toolbar">
+    <div ref="toolbarRef" class="chat-toolbar">
       <div class="plus-trigger" @click="showPlusMenu = !showPlusMenu">
         <van-icon :name="showPlusMenu ? 'cross' : 'add-o'" size="24" color="#666" />
       </div>
@@ -500,7 +510,25 @@ watch(() => chatStore.currentMessages.length, (newLen, oldLen) => {
   }
 })
 
+const toolbarRef = ref<HTMLElement | null>(null)
+
+function onViewportResize() {
+  const toolbar = toolbarRef.value
+  const list = messageListRef.value
+  if (!toolbar || !list) return
+  const vh = window.innerHeight
+  const vv = window.visualViewport ? window.visualViewport.height : vh
+  const kbHeight = vh - vv
+  toolbar.style.bottom = kbHeight + 'px'
+  list.style.bottom = (toolbar.offsetHeight + kbHeight) + 'px'
+}
+
 onMounted(async () => {
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', onViewportResize)
+  }
+  window.addEventListener('resize', onViewportResize)
+
   inputText.value = chatStore.getDraft(conversationId.value)
 
   try {
@@ -528,22 +556,20 @@ onMounted(async () => {
 onUnmounted(() => {
   chatStore.saveDraft(conversationId.value, inputText.value)
   chatStore.clearCurrentChat()
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', onViewportResize)
+  }
+  window.removeEventListener('resize', onViewportResize)
 })
 </script>
 
 <style scoped>
 .chat-page {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  height: 100dvh;
   background: #f0f0f0;
-  overflow: hidden;
 }
 
 .chat-page :deep(.van-nav-bar) {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  flex-shrink: 0;
 }
 
 .chat-page :deep(.van-nav-bar__title) {
@@ -557,11 +583,14 @@ onUnmounted(() => {
 
 /* Message list */
 .message-list {
-  flex: 1;
+  position: fixed;
+  top: 46px;
+  left: 0;
+  right: 0;
+  bottom: 52px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding: 8px 12px;
-  padding-bottom: 12px;
 }
 
 .load-more {
@@ -643,10 +672,18 @@ onUnmounted(() => {
 /* Image message */
 .msg-image {
   display: block;
-  max-width: 200px;
-  max-height: 200px;
   border-radius: 6px;
   overflow: hidden;
+}
+
+.msg-image-placeholder {
+  width: 160px;
+  height: 160px;
+  background: #f7f8fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
 }
 
 /* Album message */
@@ -682,6 +719,10 @@ onUnmounted(() => {
 
 /* Bottom toolbar */
 .chat-toolbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   align-items: flex-end;
   gap: 8px;
@@ -689,7 +730,7 @@ onUnmounted(() => {
   padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   background: #fff;
   border-top: 1px solid #e8e8e8;
-  flex-shrink: 0;
+  z-index: 100;
 }
 
 .plus-trigger {
@@ -739,13 +780,18 @@ onUnmounted(() => {
 }
 
 .plus-menu {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 52px;
   display: flex;
   justify-content: flex-start;
   gap: 20px;
   padding: 12px 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   background: #f7f8fa;
   border-top: 1px solid #e8e8e8;
-  flex-shrink: 0;
+  z-index: 100;
 }
 
 .plus-menu-item {

@@ -22,7 +22,12 @@ class UploadController
             return json(['code' => 1, 'msg' => '文件过大']);
         }
 
-        $filename = uniqid() . '.' . $file->getUploadExtension();
+        $ext = $file->getUploadExtension();
+        $safeExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
+        if (!in_array(strtolower($ext), $safeExts)) {
+            $ext = 'jpg';
+        }
+        $filename = uniqid() . '.' . $ext;
         $file->move(public_path() . '/upload/chat/' . $filename);
         return json(['code' => 0, 'data' => ['url' => '/upload/chat/' . $filename]]);
     }

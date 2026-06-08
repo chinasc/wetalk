@@ -2,29 +2,41 @@ type EventHandler = (data: Record<string, unknown>) => void
 
 class WebSocketService {
   private ws: WebSocket | null = null
-  // private url = 'ws://localhost:8788'
   private url = `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`
   private token = ''
   private handlers: Map<string, Set<EventHandler>> = new Map()
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private pingTimer: ReturnType<typeof setInterval> | null = null
   private reconnectAttempts = 0
-  private maxReconnectAttempts = 5
   private shouldReconnect = false
+  private connecting = false
 
   connect(token: string): void {
     this.token = token
     this.shouldReconnect = true
     this.reconnectAttempts = 0
+    this.connecting = false
+
+    // Clear any pending reconnect timer to prevent ghost connections
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+
     this.doConnect()
   }
 
   private doConnect(): void {
+    this.stopPing()
+
     if (this.ws) {
+      // Prevent onclose from triggering reconnect for the old connection
+      this.connecting = true
       this.ws.close()
       this.ws = null
     }
 
+    this.connecting = false
     this.ws = new WebSocket(this.url)
 
     this.ws.onopen = () => {
@@ -53,7 +65,6 @@ class WebSocketService {
         if (handlers) {
           handlers.forEach((handler) => handler(msg.data))
         }
-        // Also fire wildcard handlers
         const wildcardHandlers = this.handlers.get('*')
         if (wildcardHandlers) {
           wildcardHandlers.forEach((handler) => handler(msg.data))
@@ -65,6 +76,8 @@ class WebSocketService {
 
     this.ws.onclose = () => {
       this.stopPing()
+      // Don't reconnect if we're in the middle of a deliberate reconnect
+      if (this.connecting) return
       if (this.shouldReconnect) {
         this.scheduleReconnect()
       }
@@ -76,7 +89,8 @@ class WebSocketService {
   }
 
   private scheduleReconnect(): void {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+    const maxAttempts = 20
+    if (this.reconnectAttempts >= maxAttempts) {
       return
     }
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000)
@@ -90,7 +104,7 @@ class WebSocketService {
     this.stopPing()
     this.pingTimer = setInterval(() => {
       this.send('ping', {})
-    }, 2000)
+    }, 15000)
   }
 
   private stopPing(): void {
@@ -122,6 +136,7 @@ class WebSocketService {
 
   disconnect(): void {
     this.shouldReconnect = false
+    this.connecting = false
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
@@ -131,7 +146,7 @@ class WebSocketService {
       this.ws.close()
       this.ws = null
     }
-    this.handlers.clear()
+    // Don't clear handlers — preserve listeners (e.g. kicked) for re-login
   }
 
   get isConnected(): boolean {

@@ -261,9 +261,15 @@ function goBack() {
               :src="msg.content"
               fit="cover"
               width="160"
+              height="160"
               radius="8"
               class="msg-image"
             >
+              <template #loading>
+                <div class="msg-image-loading">
+                  <van-loading size="20" />
+                </div>
+              </template>
               <template #error>
                 <div class="msg-image-error">
                   <van-icon name="photo-o" size="24" />
@@ -441,8 +447,18 @@ function goBack() {
 
 .msg-image-error {
   width: 160px;
-  height: 120px;
+  height: 160px;
   background: #f2f3f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.msg-image-loading {
+  width: 160px;
+  height: 160px;
+  background: #f7f8fa;
   display: flex;
   align-items: center;
   justify-content: center;
