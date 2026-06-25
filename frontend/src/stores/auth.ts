@@ -28,18 +28,13 @@ export const useAuthStore = defineStore('auth', () => {
     return dt
   }
 
-  async function login(username: string, verifyCode?: string) {
-    const res = await authApi.login({ username, verify_code: verifyCode, device_token: getDeviceToken() })
+  async function login(username: string) {
+    const res = await authApi.login({ username, device_token: getDeviceToken() })
     token.value = res.data.token
     user.value = res.data.user
     localStorage.setItem('token', res.data.token)
     wsService.connect(res.data.token)
     return res.data
-  }
-
-  async function checkFirstLogin(username: string) {
-    const res = await authApi.checkFirstLogin(username, getDeviceToken())
-    return res.data.is_first_login
   }
 
   async function fetchUser() {
@@ -74,7 +69,6 @@ export const useAuthStore = defineStore('auth', () => {
     nickname,
     avatar,
     login,
-    checkFirstLogin,
     fetchUser,
     updateProfile,
     logout,

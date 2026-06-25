@@ -7,18 +7,6 @@ export interface User {
   created_at: string
 }
 
-export interface LoginParams {
-  username: string
-  password: string
-  verify_code?: string
-}
-
-export interface LoginResult {
-  token: string
-  user: User
-  is_new_user: boolean
-}
-
 export interface Game {
   id: number
   name: string

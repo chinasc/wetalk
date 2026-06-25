@@ -9,43 +9,20 @@ const route = useRoute()
 const authStore = useAuthStore()
 
 const username = ref('')
-const verifyCode = ref('')
 const loading = ref(false)
-const needVerifyCode = ref(false)
 
-const canLogin = computed(() => {
-  if (!username.value.trim()) return false
-  if (needVerifyCode.value && !verifyCode.value.trim()) return false
-  return true
-})
-
-async function checkUsername() {
-  const name = username.value.trim()
-  if (!name) return
-  try {
-    const first = await authStore.checkFirstLogin(name)
-    needVerifyCode.value = first
-  } catch {
-    needVerifyCode.value = false
-  }
-}
+const canLogin = computed(() => !!username.value.trim())
 
 async function handleLogin() {
   if (!canLogin.value) return
 
   const name = username.value.trim()
 
-  // 先检查是否首次
-  if (!needVerifyCode.value && !verifyCode.value) {
-    await checkUsername()
-  }
-
   loading.value = true
   showLoadingToast({ message: '登录中...', forbidClick: true, duration: 0 })
 
   try {
-    const code = needVerifyCode.value ? verifyCode.value.trim() : undefined
-    await authStore.login(name, code)
+    await authStore.login(name)
 
     closeToast()
     showToast('登录成功')
@@ -53,12 +30,7 @@ async function handleLogin() {
     router.replace(redirect)
   } catch (err: any) {
     closeToast()
-    if (err.code === 2) {
-      needVerifyCode.value = true
-      showToast('需要密码，请输入密码')
-    } else {
-      showToast(err.message || '登录失败')
-    }
+    showToast(err.message || '登录失败')
   } finally {
     loading.value = false
   }
@@ -82,13 +54,6 @@ async function handleLogin() {
           label="账号"
           placeholder="请输入账号"
           clearable
-          @blur="checkUsername"
-        />
-        <van-field
-          v-model="verifyCode"
-          label="密码"
-          placeholder="请输入密码"
-          clearable
         />
       </van-cell-group>
 
@@ -107,9 +72,7 @@ async function handleLogin() {
         </van-button>
       </div>
 
-      <p class="login-tip">
-        {{ needVerifyCode ? '请输入管理员提供的密码' : '输入账号即可登录' }}
-      </p>
+      <p class="login-tip">输入账号即可登录</p>
     </div>
   </div>
 </template>
