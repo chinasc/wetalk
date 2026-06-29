@@ -9,20 +9,42 @@ const route = useRoute()
 const authStore = useAuthStore()
 
 const username = ref('')
+const verifyCode = ref('')
 const loading = ref(false)
+const needVerifyCode = ref(false)
 
-const canLogin = computed(() => !!username.value.trim())
+const canLogin = computed(() => {
+  if (!username.value.trim()) return false
+  if (needVerifyCode.value && !verifyCode.value.trim()) return false
+  return true
+})
+
+async function checkUsername() {
+  const name = username.value.trim()
+  if (!name) return
+  try {
+    const first = await authStore.checkFirstLogin(name)
+    needVerifyCode.value = first
+  } catch {
+    needVerifyCode.value = false
+  }
+}
 
 async function handleLogin() {
   if (!canLogin.value) return
 
   const name = username.value.trim()
 
+  if (!needVerifyCode.value && !verifyCode.value) {
+    await checkUsername()
+  }
+
   loading.value = true
   showLoadingToast({ message: '登录中...', forbidClick: true, duration: 0 })
 
   try {
-    await authStore.login(name)
+    const code = needVerifyCode.value ? verifyCode.value.trim() : undefined
+    await authStore.login(name, code)
 
     closeToast()
     showToast('登录成功')
@@ -30,7 +52,12 @@ async function handleLogin() {
     router.replace(redirect)
   } catch (err: any) {
     closeToast()
-    showToast(err.message || '登录失败')
+    if (err.code === 2) {
+      needVerifyCode.value = true
+      showToast('首次登录，请输入验证码')
+    } else {
+      showToast(err.message || '登录失败')
+    }
   } finally {
     loading.value = false
   }
@@ -54,6 +81,14 @@ async function handleLogin() {
           label="账号"
           placeholder="请输入账号"
           clearable
+          @blur="checkUsername"
+        />
+        <van-field
+          v-if="needVerifyCode"
+          v-model="verifyCode"
+          label="验证码"
+          placeholder="首次登录，请输入验证码"
+          clearable
         />
       </van-cell-group>
 
@@ -72,7 +107,9 @@ async function handleLogin() {
         </van-button>
       </div>
 
-      <p class="login-tip">输入账号即可登录</p>
+      <p class="login-tip">
+        {{ needVerifyCode ? '首次登录请输入管理员提供的验证码' : '输入账号即可登录' }}
+      </p>
     </div>
   </div>
 </template>
