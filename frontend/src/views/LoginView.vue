@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showToast, showLoadingToast, closeToast } from 'vant'
 import { useAuthStore } from '../stores/auth'
@@ -13,6 +13,8 @@ const verifyCode = ref('')
 const loading = ref(false)
 const needVerifyCode = ref(false)
 
+let checkTimer: ReturnType<typeof setTimeout> | null = null
+
 const canLogin = computed(() => {
   if (!username.value.trim()) return false
   if (needVerifyCode.value && !verifyCode.value.trim()) return false
@@ -21,22 +23,44 @@ const canLogin = computed(() => {
 
 async function checkUsername() {
   const name = username.value.trim()
-  if (!name) return
+  if (!name) {
+    needVerifyCode.value = false
+    return
+  }
   try {
-    const first = await authStore.checkFirstLogin(name)
-    needVerifyCode.value = first
+    needVerifyCode.value = await authStore.checkFirstLogin(name)
   } catch {
     needVerifyCode.value = false
   }
 }
 
+// 用户名变化时防抖检查（不依赖 blur，移动端更可靠）
+watch(username, (val) => {
+  verifyCode.value = ''
+  needVerifyCode.value = false
+  if (checkTimer) clearTimeout(checkTimer)
+  if (!val.trim()) return
+  checkTimer = setTimeout(checkUsername, 400)
+})
+
+onUnmounted(() => {
+  if (checkTimer) clearTimeout(checkTimer)
+})
+
 async function handleLogin() {
-  if (!canLogin.value) return
+  if (!username.value.trim()) return
 
   const name = username.value.trim()
 
-  if (!needVerifyCode.value && !verifyCode.value) {
+  // 兜底：手机端可能 watch 防抖还没触发
+  if (!needVerifyCode.value) {
     await checkUsername()
+  }
+
+  // 需要验证码但未填，停下让用户填
+  if (needVerifyCode.value && !verifyCode.value.trim()) {
+    showToast('请输入验证码')
+    return
   }
 
   loading.value = true
@@ -81,7 +105,6 @@ async function handleLogin() {
           label="账号"
           placeholder="请输入账号"
           clearable
-          @blur="checkUsername"
         />
         <van-field
           v-if="needVerifyCode"
