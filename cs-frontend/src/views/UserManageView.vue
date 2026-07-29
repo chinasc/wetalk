@@ -121,10 +121,14 @@ async function fetchUsers() {
   loading.value = true
   page.value = 1
   try {
-    const res = await getCsUsers(keyword.value || undefined, page.value)
-    const data = res.data || res
-    users.value = data.data || data
-    hasMore.value = !!data.next_page_url
+    const res: any = await getCsUsers(keyword.value || undefined, page.value)
+    if (Array.isArray(res)) {
+      users.value = res
+      hasMore.value = false
+    } else {
+      users.value = res.data || []
+      hasMore.value = !!res.next_page_url
+    }
   } catch (err: any) {
     showToast(err.message || '获取失败')
   } finally {
@@ -135,11 +139,14 @@ async function fetchUsers() {
 async function loadMore() {
   page.value++
   try {
-    const res = await getCsUsers(keyword.value || undefined, page.value)
-    const data = res.data || res
-    const list = data.data || data
-    users.value.push(...list)
-    hasMore.value = !!data.next_page_url
+    const res: any = await getCsUsers(keyword.value || undefined, page.value)
+    if (Array.isArray(res)) {
+      users.value.push(...res)
+      hasMore.value = false
+    } else {
+      users.value.push(...(res.data || []))
+      hasMore.value = !!res.next_page_url
+    }
   } catch (err: any) {
     showToast(err.message || '加载失败')
   }
