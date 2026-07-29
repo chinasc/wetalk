@@ -214,9 +214,10 @@ export async function deleteQuickReply(id: number): Promise<void> {
 
 // ============ CS Users ============
 
-export async function getCsUsers(keyword?: string): Promise<any> {
+export async function getCsUsers(keyword?: string, page?: number): Promise<any> {
   const params: Record<string, unknown> = {}
   if (keyword) params.keyword = keyword
+  if (page) params.page = page
   const res = await http.get('/cs/users', { params })
   return unwrap(res)
 }

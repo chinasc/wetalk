@@ -121,7 +121,7 @@ async function fetchUsers() {
   loading.value = true
   page.value = 1
   try {
-    const res = await getCsUsers(keyword.value || undefined)
+    const res = await getCsUsers(keyword.value || undefined, page.value)
     const data = res.data || res
     users.value = data.data || data
     hasMore.value = !!data.next_page_url
@@ -135,7 +135,7 @@ async function fetchUsers() {
 async function loadMore() {
   page.value++
   try {
-    const res = await getCsUsers(keyword.value || undefined)
+    const res = await getCsUsers(keyword.value || undefined, page.value)
     const data = res.data || res
     const list = data.data || data
     users.value.push(...list)
