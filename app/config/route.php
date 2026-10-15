@@ -3,7 +3,6 @@ use Webman\Route;
 
 // 公开路由
 Route::post('/api/auth/login', [app\controller\AuthController::class, 'login']);
-Route::post('/api/auth/check-first-login', [app\controller\AuthController::class, 'checkFirstLogin']);
 Route::post('/api/auth/admin-login', [app\controller\AuthController::class, 'adminLogin']);
 Route::post('/api/auth/cs-login', [app\controller\AuthController::class, 'csLogin']);
 Route::post('/api/chat/verify-code', [app\controller\ChatController::class, 'verifyAccessCode']);
