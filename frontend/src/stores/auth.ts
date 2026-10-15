@@ -12,34 +12,25 @@ export const useAuthStore = defineStore('auth', () => {
   const nickname = computed(() => user.value?.nickname || user.value?.username || '')
   const avatar = computed(() => user.value?.avatar || '')
 
-  function generateUUID(): string {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0
-      return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
-    })
-  }
-
   function getDeviceToken(): string {
     let dt = localStorage.getItem('device_token')
     if (!dt) {
-      dt = generateUUID()
+      dt = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0
+        return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
+      })
       localStorage.setItem('device_token', dt)
     }
     return dt
   }
 
-  async function login(username: string, verifyCode?: string) {
-    const res = await authApi.login({ username, verify_code: verifyCode, device_token: getDeviceToken() })
+  async function login(username: string, password: string) {
+    const res = await authApi.login({ username, verify_code: password, device_token: getDeviceToken() })
     token.value = res.data.token
     user.value = res.data.user
     localStorage.setItem('token', res.data.token)
     wsService.connect(res.data.token)
     return res.data
-  }
-
-  async function checkFirstLogin(username: string) {
-    const res = await authApi.checkFirstLogin(username, getDeviceToken())
-    return res.data.is_first_login
   }
 
   async function fetchUser() {
@@ -74,7 +65,6 @@ export const useAuthStore = defineStore('auth', () => {
     nickname,
     avatar,
     login,
-    checkFirstLogin,
     fetchUser,
     updateProfile,
     logout,
