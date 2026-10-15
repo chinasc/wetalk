@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showToast, showLoadingToast, closeToast } from 'vant'
 import { useAuthStore } from '../stores/auth'
@@ -9,56 +9,24 @@ const route = useRoute()
 const authStore = useAuthStore()
 
 const username = ref('')
-const verifyCode = ref('')
+const password = ref('')
 const loading = ref(false)
-const needVerifyCode = ref(false)
-
-let checkTimer: ReturnType<typeof setTimeout> | null = null
 
 const canLogin = computed(() => {
   if (!username.value.trim()) return false
-  if (needVerifyCode.value && !verifyCode.value.trim()) return false
+  if (!password.value.trim()) return false
   return true
 })
 
-async function checkUsername() {
+async function handleLogin() {
   const name = username.value.trim()
+  const pwd = password.value.trim()
+
   if (!name) {
-    needVerifyCode.value = false
+    showToast('请输入账号')
     return
   }
-  try {
-    needVerifyCode.value = await authStore.checkFirstLogin(name)
-  } catch {
-    needVerifyCode.value = false
-  }
-}
-
-// 用户名变化时防抖检查（不依赖 blur，移动端更可靠）
-watch(username, (val) => {
-  verifyCode.value = ''
-  needVerifyCode.value = false
-  if (checkTimer) clearTimeout(checkTimer)
-  if (!val.trim()) return
-  checkTimer = setTimeout(checkUsername, 400)
-})
-
-onUnmounted(() => {
-  if (checkTimer) clearTimeout(checkTimer)
-})
-
-async function handleLogin() {
-  if (!username.value.trim()) return
-
-  const name = username.value.trim()
-
-  // 兜底：手机端可能 watch 防抖还没触发
-  if (!needVerifyCode.value) {
-    await checkUsername()
-  }
-
-  // 需要验证码但未填，停下让用户填
-  if (needVerifyCode.value && !verifyCode.value.trim()) {
+  if (!pwd) {
     showToast('请输入密码')
     return
   }
@@ -67,8 +35,7 @@ async function handleLogin() {
   showLoadingToast({ message: '登录中...', forbidClick: true, duration: 0 })
 
   try {
-    const code = needVerifyCode.value ? verifyCode.value.trim() : undefined
-    await authStore.login(name, code)
+    await authStore.login(name, pwd)
 
     closeToast()
     showToast('登录成功')
@@ -76,12 +43,7 @@ async function handleLogin() {
     router.replace(redirect)
   } catch (err: any) {
     closeToast()
-    if (err.code === 2) {
-      needVerifyCode.value = true
-      showToast('首次登录，请输入密码')
-    } else {
-      showToast(err.message || '登录失败')
-    }
+    showToast(err.message || '登录失败')
   } finally {
     loading.value = false
   }
@@ -107,10 +69,9 @@ async function handleLogin() {
           clearable
         />
         <van-field
-          v-if="needVerifyCode"
-          v-model="verifyCode"
+          v-model="password"
           label="密码"
-          placeholder="首次登录，请输入密码"
+          placeholder="请输入密码"
           clearable
         />
       </van-cell-group>
@@ -130,9 +91,7 @@ async function handleLogin() {
         </van-button>
       </div>
 
-      <p class="login-tip">
-        {{ needVerifyCode ? '首次登录请输入管理员提供的密码' : '输入账号即可登录' }}
-      </p>
+      <p class="login-tip">请输入管理员提供的账号和密码</p>
     </div>
   </div>
 </template>
