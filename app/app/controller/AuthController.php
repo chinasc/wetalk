@@ -9,12 +9,12 @@ use support\Request;
 class AuthController
 {
     /**
-     * 用户端登录：首次或新设备需验证码
+     * 用户端登录：账号 + 密码，换设备后旧密码失效，需重新获取新密码
      */
     public function login(Request $request)
     {
         $username = trim($request->post('username', ''));
-        $verifyCode = trim($request->post('verify_code', ''));
+        $password = trim($request->post('verify_code', ''));
         $deviceToken = trim($request->post('device_token', ''));
 
         if (!$username) {
@@ -26,36 +26,38 @@ class AuthController
             return json(['code' => 1, 'msg' => '账户不存在或已被禁用']);
         }
 
-        // 判断是否需要验证码：首次登录 或 新设备
-        $needVerify = !$user->verify_code_used;
+        if (!$password) {
+            return json(['code' => 1, 'msg' => '请输入密码']);
+        }
+        if ($user->verify_code !== $password) {
+            return json(['code' => 1, 'msg' => '密码错误']);
+        }
 
-        if ($deviceToken && $user->verify_code_used) {
-            $needVerify = $needVerify || !UserDevice::where('user_id', $user->id)
+        if (!$user->verify_code_used) {
+            // 新密码首次使用：踢掉旧设备，绑定当前设备并激活
+            UserDevice::where('user_id', $user->id)->delete();
+            if ($deviceToken) {
+                UserDevice::create([
+                    'user_id' => $user->id,
+                    'device_token' => $deviceToken,
+                ]);
+            }
+            User::where('id', $user->id)->update(['verify_code_used' => 1]);
+        } else {
+            // 已激活的密码仅限已绑定设备使用
+            $deviceOk = $deviceToken && UserDevice::where('user_id', $user->id)
                 ->where('device_token', $deviceToken)
                 ->exists();
-        } elseif ($user->verify_code_used) {
-            // 没有传 device_token，也视为新设备
-            $needVerify = true;
-        }
-
-        if ($needVerify) {
-            if (!$verifyCode) {
-                return json(['code' => 2, 'msg' => '请输入验证码']);
+            if (!$deviceOk) {
+                // 换设备：作废旧密码并生成新密码，需联系管理员获取
+                $newCode = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+                User::where('id', $user->id)->update([
+                    'verify_code' => $newCode,
+                    'verify_code_used' => 0,
+                ]);
+                UserDevice::where('user_id', $user->id)->delete();
+                return json(['code' => 3, 'msg' => '检测到新设备登录，原密码已失效，请联系管理员获取新密码']);
             }
-            if ($user->verify_code !== $verifyCode) {
-                return json(['code' => 1, 'msg' => '验证码错误']);
-            }
-            if (!$user->verify_code_used) {
-                User::where('id', $user->id)->update(['verify_code_used' => 1]);
-            }
-        }
-
-        // 记录授权设备
-        if ($deviceToken) {
-            UserDevice::firstOrCreate([
-                'user_id' => $user->id,
-                'device_token' => $deviceToken,
-            ]);
         }
 
         $token = JwtService::generate($user->id);
@@ -115,41 +117,6 @@ class AuthController
                     'avatar' => $user->avatar,
                     'role' => $user->role,
                 ],
-            ],
-        ]);
-    }
-
-    /**
-     * 检查用户登录是否需要验证码（用户端调用）
-     */
-    public function checkFirstLogin(Request $request)
-    {
-        $username = trim($request->post('username', ''));
-        $deviceToken = trim($request->post('device_token', ''));
-
-        if (!$username) {
-            return json(['code' => 1, 'msg' => '请输入用户名']);
-        }
-
-        $user = User::where('username', $username)->where('status', 1)->first();
-        if (!$user) {
-            return json(['code' => 1, 'msg' => '账户不存在或已被禁用']);
-        }
-
-        $needVerify = !$user->verify_code_used;
-
-        if (!$needVerify && $deviceToken) {
-            $needVerify = !UserDevice::where('user_id', $user->id)
-                ->where('device_token', $deviceToken)
-                ->exists();
-        } elseif ($user->verify_code_used && !$deviceToken) {
-            $needVerify = true;
-        }
-
-        return json([
-            'code' => 0,
-            'data' => [
-                'is_first_login' => $needVerify,
             ],
         ]);
     }
