@@ -41,7 +41,7 @@ http.interceptors.response.use(
 export default http
 
 export const authApi = {
-  login(params: { username: string; verify_code: string; device_token: string }) {
+  login(params: { username: string; verify_code: string }) {
     return http.post('/auth/login', params)
   },
   getInfo() {
